@@ -1,3 +1,10 @@
+import { TableCell, TableRow } from "@mui/material";
+import Row from "./Row";
+
 export default function MainTable() {
-  return <div className="border-t border-borderMain">MainTable</div>;
+  return (
+    <div className="text-navbarSecondary">
+      <Row></Row>
+    </div>
+  );
 }

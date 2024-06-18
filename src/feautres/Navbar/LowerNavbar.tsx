@@ -1,8 +1,8 @@
 export default function LowerNavbar() {
   return (
     <div className="flex border-b border-borderMain">
-      <div className="flex w-[234px] justify-between border-r border-borderMain pr-[7px]">
-        <div className="flex flex-col justify-center py-[8px] pl-5">
+      <div className="flex min-w-[234px] justify-between border-r border-borderMain pr-[7px]">
+        <div className="flex flex-col justify-center py-[8px] pl-5 text-navbarSecondary">
           <h1>Название проекта</h1>
           <span className="text-[10px]">Аббревиатура</span>
         </div>

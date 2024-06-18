@@ -69,7 +69,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="basis-[234px] border-r border-borderMain">
+    <div className="min-w-[234px] border-r border-borderMain">
       <ul>
         {data.map((item) => (
           <SidebarClause key={item.id} title={item.title} />
