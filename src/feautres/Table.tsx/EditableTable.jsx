@@ -31,14 +31,20 @@ const EditableTable = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   let initialLevel = 0;
+
   const getLevel = (rows) => {
     const modifiedRows = rows.map((item) => {
-      initialLevel = 0;
-      return {
-        ...item, // Копирование свойств из исходного элемента
-        level: ++initialLevel,
-        child: getLevel(item.child), // Добавление нового свойства
-      };
+      if (item.child) {
+        const obj = {
+          ...item, // Копирование свойств из исходного элемента
+          level: ++initialLevel,
+          child: getLevel(item.child), // Добавление нового свойства
+        };
+        initialLevel = 0;
+        return obj;
+      }
+
+      return { ...item, level: 0 };
     });
 
     return modifiedRows;
