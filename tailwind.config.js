@@ -8,6 +8,8 @@ module.exports = {
         secondary: "#27272A",
         borderMain: "#414144",
         navbarSecondary: "#A1A1AA",
+        actionColor: "#414144",
+        borderButton: "#C6C6C6",
       },
     },
     fontFamily: {

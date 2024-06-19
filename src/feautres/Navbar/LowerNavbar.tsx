@@ -6,7 +6,7 @@ export default function LowerNavbar() {
           <h1>Название проекта</h1>
           <span className="text-[10px]">Аббревиатура</span>
         </div>
-        <img src="./arrowDown.svg" alt="" />
+        <img src="./arrowDown.svg" alt="" className="w-3" />
       </div>
 
       <div className="flex h-[55px] w-[312px] items-center justify-center border-r border-borderMain text-lg">

@@ -1,10 +1,10 @@
-import { TableCell, TableRow } from "@mui/material";
-import Row from "./Row";
+import EditableTable from "./EditableTable";
+import ActionButtons from "./ActionButtons";
 
 export default function MainTable() {
   return (
     <div className="text-navbarSecondary">
-      <Row></Row>
+      <EditableTable />
     </div>
   );
 }
