@@ -4,35 +4,30 @@ import { API_ID, API_URL } from "../../config";
 
 const EditableTable = () => {
   const [initialData, setInitialData] = useState(null);
-
-  // const [formData, setFormData] = useState({
-  //   id: 0,
-  //   rowName: "",
-  //   salary: 0,
-  //   equipment: 0,
-  //   overhead: 0,
-  //   profit: 0,
-  //   level: 0,
-  //   parentId: undefined,
-  // });
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     id: 0,
     rowName: "",
     salary: 0,
-    equipment: 0,
-    overhead: 0,
-    profit: 0,
+    equipmentCosts: 0,
+    overheads: 0,
+    estimatedProfit: 0,
     level: 0,
     parentId: undefined,
   });
 
   useEffect(() => {
     const fetchData = async function (url, id) {
+      setIsLoading(true);
+
       const res = await fetch(`${url}/v1/outlay-rows/entity/${id}/row/list`);
 
       const data = await res.json();
       setInitialData(data);
+
+      setIsLoading(false);
+
       return data;
     };
 
@@ -41,6 +36,7 @@ const EditableTable = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData({
       ...formData,
       [name]: name === "rowName" ? value : parseFloat(value),
@@ -48,11 +44,52 @@ const EditableTable = () => {
   };
 
   const createRow = async function () {
-    const res = await fetch(`${url}`);
+    const newRow = {
+      equipmentCosts: formData.equipmentCosts,
+      estimatedProfit: formData.estimatedProfit,
+      machineOperatorSalary: 0,
+      mainCosts: 0,
+      materials: 0,
+      mimExploitation: 0,
+      overheads: formData.overheads,
+      parentId: formData.parentId || null,
+      rowName: formData.rowName,
+      salary: formData.salary,
+      supportCosts: 0,
+    };
+
+    try {
+      const res = await fetch(
+        `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newRow),
+        },
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to create row");
+      }
+
+      const data = await res.json();
+
+      setInitialData((currentRows) => [...currentRows, data.current]);
+      console.log("Row created successfully:", data);
+
+      // Дополнительная логика после успешного создания строки, если нужно
+    } catch (error) {
+      console.error("Error creating row:", error);
+      // Обработка ошибок, если нужно
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    createRow();
 
     // fetch(`${url}/v1/outlay-rows/entity/${id}/row/create`, { method: POST });
   };
@@ -77,6 +114,11 @@ const EditableTable = () => {
           </tr>
         </thead>
         <tbody>
+          {isLoading && (
+            <tr className="h-[60px] w-full text-green-500">
+              <th className="text-left">Loading...</th>
+            </tr>
+          )}
           {/* Display form inputs if data is empty */}
           {initialData?.length === 0 && (
             <tr className="h-[60px]">
@@ -94,7 +136,8 @@ const EditableTable = () => {
               </th>
               <th className="h-[42px] text-left font-normal">
                 <input
-                  type="text"
+                  type="number"
+                  name="salary"
                   value={formData.salary}
                   className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
                   onChange={handleChange}
@@ -102,7 +145,8 @@ const EditableTable = () => {
               </th>
               <th className="h-[42px] text-left font-normal">
                 <input
-                  type="text"
+                  type="number"
+                  name="equipmentCosts"
                   value={formData.equipmentCosts}
                   className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
                   onChange={handleChange}
@@ -110,15 +154,17 @@ const EditableTable = () => {
               </th>
               <th className="h-[42px] text-left font-normal">
                 <input
-                  type="text"
-                  value={formData.supportCosts}
+                  type="number"
+                  name="overheads"
+                  value={formData.overheads}
                   className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
                   onChange={handleChange}
                 />
               </th>
               <th className="h-[42px] text-left font-normal">
                 <input
-                  type="text"
+                  type="number"
+                  name="estimatedProfit"
                   value={formData.estimatedProfit}
                   className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
                   onChange={handleChange}
@@ -133,7 +179,7 @@ const EditableTable = () => {
                 <td>{row.rowName}</td>
                 <td>{row.salary}</td>
                 <td>{row.equipmentCosts}</td>
-                <td>{row.supportCosts}</td>
+                <td>{row.overheads}</td>
                 <td>{row.estimatedProfit}</td>
               </tr>
             ))}
