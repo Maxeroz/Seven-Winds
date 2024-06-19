@@ -1,10 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 import { API_ID, API_URL } from "../../config";
+import ActionButtons from "./ActionButtons";
 // import ActionButtons from "./ActionButtons";
+
+const createRowMarkup = (row) => {
+  return (
+    row?.child &&
+    row?.child.map((childRow) => {
+      return (
+        <Fragment key={childRow.id}>
+          <tr className="h-[60px] border-y border-borderMain text-white">
+            <td style={{ paddingLeft: `${row.level * 30}px` }}>
+              {<ActionButtons level="child" />}
+            </td>
+            <td>{childRow.rowName}</td>
+            <td>{childRow.salary}</td>
+            <td>{childRow.equipmentCosts}</td>
+            <td>{childRow.overheads}</td>
+            <td>{childRow.estimatedProfit}</td>
+          </tr>
+          {childRow.child && createRowMarkup(childRow)}
+        </Fragment>
+      );
+    })
+  );
+};
 
 const EditableTable = () => {
   const [initialData, setInitialData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  let initialLevel = 0;
+  const getLevel = (rows) => {
+    const modifiedRows = rows.map((item) => {
+      initialLevel = 0;
+      return {
+        ...item, // Копирование свойств из исходного элемента
+        level: ++initialLevel,
+        child: getLevel(item.child), // Добавление нового свойства
+      };
+    });
+
+    return modifiedRows;
+  };
 
   const [formData, setFormData] = useState({
     id: 0,
@@ -24,7 +62,7 @@ const EditableTable = () => {
       const res = await fetch(`${url}/v1/outlay-rows/entity/${id}/row/list`);
 
       const data = await res.json();
-      setInitialData(data);
+      setInitialData(getLevel(data));
 
       setIsLoading(false);
 
@@ -169,35 +207,19 @@ const EditableTable = () => {
           )}
           {initialData?.length > 0 &&
             initialData.map((row) => (
-              <>
-                <tr
-                  key={row.id}
-                  className="h-[60px] border-y border-borderMain text-white"
-                >
-                  <td>{/* <ActionButtons id={row.id} /> */}</td>
+              <Fragment key={row.id}>
+                <tr className="h-[60px] border-y border-borderMain text-white">
+                  <td>
+                    <ActionButtons />
+                  </td>
                   <td>{row.rowName}</td>
                   <td>{row.salary}</td>
                   <td>{row.equipmentCosts}</td>
                   <td>{row.overheads}</td>
                   <td>{row.estimatedProfit}</td>
                 </tr>
-                {row?.child &&
-                  row?.child.map((childRow) => {
-                    return (
-                      <tr
-                        key={childRow.id}
-                        className="h-[60px] border-y border-borderMain text-white"
-                      >
-                        <td>{/* <ActionButtons id={row.id} /> */}</td>
-                        <td>{childRow.rowName}</td>
-                        <td>{childRow.salary}</td>
-                        <td>{childRow.equipmentCosts}</td>
-                        <td>{childRow.overheads}</td>
-                        <td>{childRow.estimatedProfit}</td>
-                      </tr>
-                    );
-                  })}
-              </>
+                {createRowMarkup(row)}
+              </Fragment>
             ))}
         </tbody>
       </table>
