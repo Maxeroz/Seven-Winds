@@ -3,7 +3,7 @@ import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
 // import ActionButtons from "./ActionButtons";
 
-const createRowMarkup = (row) => {
+const createRowMarkup = (row, onDelete, initalData) => {
   return (
     row?.child &&
     row?.child.map((childRow) => {
@@ -11,7 +11,12 @@ const createRowMarkup = (row) => {
         <Fragment key={childRow.id}>
           <tr className="h-[60px] border-y border-borderMain text-white">
             <td style={{ paddingLeft: `${row.level * 30}px` }}>
-              {<ActionButtons level="child" />}
+              {
+                <ActionButtons
+                  level="child"
+                  onDelete={() => onDelete(initalData, childRow.id)}
+                />
+              }
             </td>
             <td>{childRow.rowName}</td>
             <td>{childRow.salary}</td>
@@ -19,7 +24,7 @@ const createRowMarkup = (row) => {
             <td>{childRow.overheads}</td>
             <td>{childRow.estimatedProfit}</td>
           </tr>
-          {childRow.child && createRowMarkup(childRow)}
+          {childRow.child && createRowMarkup(childRow, onDelete, initalData)}
         </Fragment>
       );
     })
@@ -29,6 +34,7 @@ const createRowMarkup = (row) => {
 const EditableTable = () => {
   const [initialData, setInitialData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   let initialLevel = 0;
 
@@ -61,20 +67,52 @@ const EditableTable = () => {
     parentId: undefined,
   });
 
+  const handleDelete = async (array, id) => {
+    const modified = removeObjectByIdRecursive(array, id);
+
+    fetch(`${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/delete`, {
+      method: "DELETE",
+    });
+
+    setInitialData(modified);
+  };
+
+  const removeObjectByIdRecursive = (array, id) => {
+    return array
+      .map((item) => {
+        // Если у элемента есть дочерние элементы, применяем рекурсию к ним
+        if (item.child) {
+          return {
+            ...item,
+            child: removeObjectByIdRecursive(item.child, id),
+          };
+        }
+        return item;
+      })
+      .filter((item) => item.id !== id); // Удаляем элемент только на текущем уровне
+  };
+
   useEffect(() => {
     const fetchData = async function (url, id) {
       setIsLoading(true);
 
-      const res = await fetch(`${url}/v1/outlay-rows/entity/${id}/row/list`);
+      try {
+        const res = await fetch(`${url}/v1/outlay-rows/entity/${id}/row/list`);
 
-      const data = await res.json();
-      setInitialData(getLevel(data));
+        setIsLoading(false);
 
-      setIsLoading(false);
+        if (!res.ok) throw new Error("Failed to fetch");
 
-      return data;
+        const data = await res.json();
+
+        setInitialData(getLevel(data));
+
+        return data;
+      } catch (error) {
+        setError(error.message);
+        setIsLoading(false);
+      }
     };
-
     fetchData(API_URL, API_ID);
   }, []);
 
@@ -158,6 +196,12 @@ const EditableTable = () => {
               <th className="text-left">Loading...</th>
             </tr>
           )}
+          {error && (
+            <tr className="h-[60px] w-full text-red-500">
+              <th className="text-left">Error fetching data...</th>
+            </tr>
+          )}
+
           {/* Display form inputs if data is empty */}
           {initialData?.length === 0 && (
             <tr className="h-[60px]">
@@ -216,7 +260,9 @@ const EditableTable = () => {
               <Fragment key={row.id}>
                 <tr className="h-[60px] border-y border-borderMain text-white">
                   <td>
-                    <ActionButtons />
+                    <ActionButtons
+                      onDelete={() => handleDelete(initialData, row.id)}
+                    />
                   </td>
                   <td>{row.rowName}</td>
                   <td>{row.salary}</td>
@@ -224,7 +270,7 @@ const EditableTable = () => {
                   <td>{row.overheads}</td>
                   <td>{row.estimatedProfit}</td>
                 </tr>
-                {createRowMarkup(row)}
+                {createRowMarkup(row, handleDelete, initialData)}
               </Fragment>
             ))}
         </tbody>
