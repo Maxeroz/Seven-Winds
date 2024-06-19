@@ -78,11 +78,8 @@ const EditableTable = () => {
 
       setInitialData((currentRows) => [...currentRows, data.current]);
       console.log("Row created successfully:", data);
-
-      // Дополнительная логика после успешного создания строки, если нужно
     } catch (error) {
       console.error("Error creating row:", error);
-      // Обработка ошибок, если нужно
     }
   };
 
@@ -90,8 +87,6 @@ const EditableTable = () => {
     e.preventDefault();
 
     createRow();
-
-    // fetch(`${url}/v1/outlay-rows/entity/${id}/row/create`, { method: POST });
   };
 
   return (
@@ -174,14 +169,35 @@ const EditableTable = () => {
           )}
           {initialData?.length > 0 &&
             initialData.map((row) => (
-              <tr key={row.id} className="h-[60px] text-white">
-                <td>{/* <ActionButtons id={row.id} /> */}</td>
-                <td>{row.rowName}</td>
-                <td>{row.salary}</td>
-                <td>{row.equipmentCosts}</td>
-                <td>{row.overheads}</td>
-                <td>{row.estimatedProfit}</td>
-              </tr>
+              <>
+                <tr
+                  key={row.id}
+                  className="h-[60px] border-y border-borderMain text-white"
+                >
+                  <td>{/* <ActionButtons id={row.id} /> */}</td>
+                  <td>{row.rowName}</td>
+                  <td>{row.salary}</td>
+                  <td>{row.equipmentCosts}</td>
+                  <td>{row.overheads}</td>
+                  <td>{row.estimatedProfit}</td>
+                </tr>
+                {row?.child &&
+                  row?.child.map((childRow) => {
+                    return (
+                      <tr
+                        key={childRow.id}
+                        className="h-[60px] border-y border-borderMain text-white"
+                      >
+                        <td>{/* <ActionButtons id={row.id} /> */}</td>
+                        <td>{childRow.rowName}</td>
+                        <td>{childRow.salary}</td>
+                        <td>{childRow.equipmentCosts}</td>
+                        <td>{childRow.overheads}</td>
+                        <td>{childRow.estimatedProfit}</td>
+                      </tr>
+                    );
+                  })}
+              </>
             ))}
         </tbody>
       </table>
