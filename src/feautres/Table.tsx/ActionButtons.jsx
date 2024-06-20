@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 
-const ActionButtons = ({ onAdd, onDelete, level, id, onCurrentId }) => {
+const ActionButtons = ({
+  onAdd,
+  onDelete,
+  level,
+  id,
+  onCurrentId,
+  isEdited,
+}) => {
   const [displayOn, setDisplayOn] = useState();
 
   const handleHover = () => {
@@ -41,13 +48,19 @@ const ActionButtons = ({ onAdd, onDelete, level, id, onCurrentId }) => {
           onClick={handleAdd}
           onMouseEnter={handleHover}
           className="relative z-20"
+          disabled={isEdited}
         >
           <img src="./editButton.svg" alt="" />
         </button>
 
         {/* Кнопка удаления, отображается при наведении */}
         {displayOn && (
-          <button type="button" onClick={onDelete} className="relative z-20">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="relative z-20"
+            disabled={isEdited}
+          >
             <img src="./deleteButton.svg" alt="" />
           </button>
         )}

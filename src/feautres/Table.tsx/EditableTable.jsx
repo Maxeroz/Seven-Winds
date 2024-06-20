@@ -1,57 +1,12 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
+import { createRowMarkup } from "../../utils/editableTable";
 // import ActionButtons from "./ActionButtons";
-
-// Рекурсивная функция для создания рядов таблицы
-const createRowMarkup = (
-  row,
-  onAdd,
-  handleDelete,
-  initialData,
-  setCurrentId,
-  nestRef,
-) => {
-  return (
-    row?.child &&
-    row?.child.map((childRow) => {
-      return (
-        <Fragment key={childRow.id}>
-          <tr className="h-[60px] border-y border-borderMain text-white">
-            <td style={{ paddingLeft: `${row.level * 30}px` }}>
-              {
-                <ActionButtons
-                  level="child"
-                  onDelete={() => handleDelete(initialData, childRow.id)}
-                  id={childRow.id}
-                  onAdd={onAdd}
-                  onCurrentId={setCurrentId}
-                />
-              }
-            </td>
-            <td>{childRow.rowName}</td>
-            <td>{childRow.salary}</td>
-            <td>{childRow.equipmentCosts}</td>
-            <td>{childRow.overheads}</td>
-            <td>{childRow.estimatedProfit}</td>
-          </tr>
-          {childRow.child &&
-            createRowMarkup(
-              childRow,
-              onAdd,
-              handleDelete,
-              initialData,
-              setCurrentId,
-              ++nestRef,
-            )}
-        </Fragment>
-      );
-    })
-  );
-};
 
 // Главный компонент таблицы
 const EditableTable = () => {
+  // Состояния компонента
   const [initialData, setInitialData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,6 +103,25 @@ const EditableTable = () => {
     fetchData(API_URL, API_ID);
   }, []);
 
+  // Функция для обновления вложенных элементов
+  const updateNestedRow = (data, id, updatedRowObj) => {
+    return data.map((item) => {
+      if (item.id === id) {
+        // Обновляем элемент, если id совпадает
+        return { ...item, ...updatedRowObj };
+      }
+      // Проверяем наличие вложенных элементов
+      if (item.child && item.child.length > 0) {
+        return {
+          ...item,
+          child: updateNestedRow(item.child, id, updatedRowObj),
+        };
+      }
+      return item;
+    });
+  };
+
+  // Функция для добавления вложенных элементов
   const addChildToNestedItem = (items, currentId, data) => {
     return items.map((item) => {
       if (item.id === currentId) {
@@ -217,14 +191,6 @@ const EditableTable = () => {
           ]);
         }
 
-        // setInitialData((items) =>
-        //   items.map((item) =>
-        //     item.id === currentId
-        //       ? { ...item, child: [...item.child, data.current] }
-        //       : { ...item },
-        //   ),
-        // );
-
         setInitialData((items) =>
           getLevel(addChildToNestedItem(items, currentId, data)),
         );
@@ -232,10 +198,17 @@ const EditableTable = () => {
         setIsAdded(false);
         setCurrentId(null);
 
-        // let index = initialData.find((item) => item.id === currentId).level;
-        // console.log(index);
-
-        // setInitialData((currentRows) => [...currentRows, { ...data.current }]);
+        setFormData({
+          id: 0,
+          rowName: "",
+          salary: 0,
+          equipmentCosts: 0,
+          overheads: 0,
+          estimatedProfit: 0,
+          level: 0,
+          parentId: undefined,
+          child: [],
+        });
 
         console.log("Row created successfully:", data);
       } catch (error) {
@@ -244,46 +217,69 @@ const EditableTable = () => {
     }
 
     // Обновление ряда начинается здесь.
+    // Если строка редактируется производим редактирование строки методом POST
+    if (isEdited) {
+      // Создаем обновленный объект с предзаполненными некоторыми свойствами.
+      const {
+        rowName,
+        salary,
+        equipmentCosts,
+        estimatedProfit,
+        overheads,
+        id,
+      } = formData;
+      const updatedRowObj = {
+        equipmentCosts,
+        estimatedProfit,
+        machineOperatorSalary: 0,
+        mainCosts: 0,
+        materials: 0,
+        mimExploitation: 0,
+        overheads,
+        rowName,
+        salary,
+        supportCosts: 0,
+      };
 
-    // Создаем обновленный объект с предзаполненными некоторыми свойствами.
-    const { rowName, salary, equipmentCosts, estimatedProfit, overheads, id } =
-      formData;
-    const updatedRowObj = {
-      equipmentCosts,
-      estimatedProfit,
-      machineOperatorSalary: 0,
-      mainCosts: 0,
-      materials: 0,
-      mimExploitation: 0,
-      overheads,
-      rowName,
-      salary,
-      supportCosts: 0,
-    };
+      console.log(id);
+      console.log(updatedRowObj);
 
-    try {
-      const res = await fetch(
-        `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+      try {
+        const res = await fetch(
+          `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/update`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updatedRowObj),
           },
-          body: JSON.stringify(updatedRowObj),
-        },
-      );
+        );
 
-      const updatedInitialStateArray = initialData.map((item) =>
-        item.id === id ? { ...item, ...updatedRowObj } : item,
-      );
+        const updatedInitialStateArray = updateNestedRow(
+          initialData,
+          id,
+          updatedRowObj,
+        );
+        console.log(updatedInitialStateArray);
 
-      console.log("Updated initial data array:", updatedInitialStateArray);
-
-      setInitialData(updatedInitialStateArray);
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setIsEdited(false);
+        setInitialData(updatedInitialStateArray);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setIsEdited(false);
+        setFormData({
+          id: 0,
+          rowName: "",
+          salary: 0,
+          equipmentCosts: 0,
+          overheads: 0,
+          estimatedProfit: 0,
+          level: 0,
+          parentId: undefined,
+          child: [],
+        });
+      }
     }
   };
 
@@ -310,6 +306,8 @@ const EditableTable = () => {
   };
 
   const handleDoubleClick = (rowId) => {
+    setCurrentId(rowId);
+    setIsEdited(true);
     // Деструктурировать текущий редактируемый объект для того чтобы установить текущее состояние инпутов в formData
     const {
       id,
@@ -335,7 +333,6 @@ const EditableTable = () => {
       child,
     });
     // alert("Double Clicked");
-    setIsEdited(true);
   };
 
   return (
@@ -387,11 +384,12 @@ const EditableTable = () => {
                       onAdd={handleAdd}
                       id={row.id}
                       onCurrentId={setCurrentId}
+                      isEdited={isEdited}
                     />
                   </td>
                   {/* Имя строки или инпут для редактирования */}
                   <td className="w-[500px]">
-                    {isEdited ? (
+                    {isEdited && currentId === row.id ? (
                       <input
                         type="text"
                         name="rowName"
@@ -405,7 +403,7 @@ const EditableTable = () => {
                   </td>
                   {/* Зарплата или инпут для редактирования */}
                   <td className="w-[140px]">
-                    {isEdited ? (
+                    {isEdited && currentId === row.id ? (
                       <input
                         type="number"
                         name="salary"
@@ -419,7 +417,7 @@ const EditableTable = () => {
                   </td>
                   {/* Расходы на оборудование или инпут для редактирования */}
                   <td className="w-[120px]">
-                    {isEdited ? (
+                    {isEdited && currentId === row.id ? (
                       <input
                         type="number"
                         name="equipmentCosts"
@@ -433,7 +431,7 @@ const EditableTable = () => {
                   </td>
                   {/* Накладные расходы или инпут для редактирования */}
                   <td className="w-[120px]">
-                    {isEdited ? (
+                    {isEdited && currentId === row.id ? (
                       <input
                         type="number"
                         name="overheads"
@@ -447,7 +445,7 @@ const EditableTable = () => {
                   </td>
                   {/* Ожидаемая прибыль или инпут для редактирования */}
                   <td className="w-[120px]">
-                    {isEdited ? (
+                    {isEdited && currentId === row.id ? (
                       <input
                         type="number"
                         name="estimatedProfit"
@@ -460,7 +458,6 @@ const EditableTable = () => {
                     )}
                   </td>
                 </tr>
-
                 {/* Рекурсия для отображения вложенных рядов */}
                 {createRowMarkup(
                   row,
@@ -469,10 +466,15 @@ const EditableTable = () => {
                   initialData,
                   setCurrentId,
                   nestRef.current,
+                  handleDoubleClick,
+                  isEdited,
+                  currentId,
+                  handleChange,
                 )}
               </Fragment>
             ))}
-          {/* Display form inputs if data is empty or isAdded is true*/}
+          {/* Отобразить форм инпуты если data пустое и isAdded === true */}
+
           {(initialData?.length === 0 || isAdded) && (
             <tr className="h-[60px]">
               <th className="h-[42px] text-left font-normal">
@@ -480,6 +482,7 @@ const EditableTable = () => {
                   onDelete={() => handleDelete(initialData, row.id)}
                   onAdd={handleAdd}
                   onCurrentId={setCurrentId}
+                  isEdited={isEdited}
                 />
               </th>
               <th className="h-[42px] w-[500px] text-left font-normal">
