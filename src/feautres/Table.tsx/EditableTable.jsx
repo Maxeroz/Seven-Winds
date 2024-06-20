@@ -3,7 +3,14 @@ import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
 // import ActionButtons from "./ActionButtons";
 
-const createRowMarkup = (row, onDelete, initalData) => {
+// Рекурсивная функция для создания рядов таблицы
+const createRowMarkup = (
+  row,
+  onAdd,
+  handleDelete,
+  initialData,
+  setCurrentId,
+) => {
   return (
     row?.child &&
     row?.child.map((childRow) => {
@@ -14,7 +21,10 @@ const createRowMarkup = (row, onDelete, initalData) => {
               {
                 <ActionButtons
                   level="child"
-                  onDelete={() => onDelete(initalData, childRow.id)}
+                  onDelete={() => handleDelete(initialData, childRow.id)}
+                  id={childRow.id}
+                  onAdd={onAdd}
+                  onCurrentId={setCurrentId}
                 />
               }
             </td>
@@ -24,7 +34,14 @@ const createRowMarkup = (row, onDelete, initalData) => {
             <td>{childRow.overheads}</td>
             <td>{childRow.estimatedProfit}</td>
           </tr>
-          {childRow.child && createRowMarkup(childRow, onDelete, initalData)}
+          {childRow.child &&
+            createRowMarkup(
+              childRow,
+              onAdd,
+              handleDelete,
+              initialData,
+              setCurrentId,
+            )}
         </Fragment>
       );
     })
@@ -35,6 +52,8 @@ const EditableTable = () => {
   const [initialData, setInitialData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isAdded, setIsAdded] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
 
   let initialLevel = 0;
 
@@ -65,7 +84,13 @@ const EditableTable = () => {
     estimatedProfit: 0,
     level: 0,
     parentId: undefined,
+    child: [],
   });
+
+  const handleAdd = (id) => {
+    setCurrentId(id);
+    setIsAdded(true);
+  };
 
   const handleDelete = async (array, id) => {
     const modified = removeObjectByIdRecursive(array, id);
@@ -116,6 +141,23 @@ const EditableTable = () => {
     fetchData(API_URL, API_ID);
   }, []);
 
+  const addChildToNestedItem = (items, currentId, data) => {
+    return items.map((item) => {
+      if (item.id === currentId) {
+        // Добавляем новые данные в массив child найденного элемента
+        return { ...item, child: [...(item.child || []), data.current] };
+      } else if (item.child && item.child.length > 0) {
+        // Рекурсивно ищем и обновляем вложенные массивы child
+        return {
+          ...item,
+          child: addChildToNestedItem(item.child, currentId, data),
+        };
+      } else {
+        return item;
+      }
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -134,7 +176,7 @@ const EditableTable = () => {
       materials: 0,
       mimExploitation: 0,
       overheads: formData.overheads,
-      parentId: formData.parentId || null,
+      parentId: formData.parentId || currentId || null,
       rowName: formData.rowName,
       salary: formData.salary,
       supportCosts: 0,
@@ -158,7 +200,33 @@ const EditableTable = () => {
 
       const data = await res.json();
 
-      setInitialData((currentRows) => [...currentRows, data.current]);
+      if (initialData.length === 0) {
+        setInitialData((currentRows) => [
+          ...currentRows,
+          { ...data.current, child: [] },
+        ]);
+      }
+
+      // setInitialData((items) =>
+      //   items.map((item) =>
+      //     item.id === currentId
+      //       ? { ...item, child: [...item.child, data.current] }
+      //       : { ...item },
+      //   ),
+      // );
+
+      setInitialData((items) =>
+        getLevel(addChildToNestedItem(items, currentId, data)),
+      );
+
+      setIsAdded(false);
+      setCurrentId(null);
+
+      // let index = initialData.find((item) => item.id === currentId).level;
+      // console.log(index);
+
+      // setInitialData((currentRows) => [...currentRows, { ...data.current }]);
+
       console.log("Row created successfully:", data);
     } catch (error) {
       console.error("Error creating row:", error);
@@ -182,9 +250,13 @@ const EditableTable = () => {
             <th className="h-[42px] w-[500px] text-left font-normal">
               Наименование работ
             </th>
-            <th className="h-[42px] text-left font-normal">Основная з/п</th>
-            <th className="h-[42px] text-left font-normal">Оборудование</th>
-            <th className="h-[42px] text-left font-normal">
+            <th className="h-[42px] w-[140px] text-left font-normal">
+              Основная з/п
+            </th>
+            <th className="h-[42px] w-[140px] text-left font-normal">
+              Оборудование
+            </th>
+            <th className="h-[42px] w-[120px] text-left font-normal">
               Накладные расходы
             </th>
             <th className="h-[42px] text-left font-normal">Сметная прибыль</th>
@@ -202,11 +274,42 @@ const EditableTable = () => {
             </tr>
           )}
 
-          {/* Display form inputs if data is empty */}
-          {initialData?.length === 0 && (
+          {initialData?.length > 0 &&
+            initialData.map((row) => (
+              <Fragment key={row.id}>
+                <tr className="h-[60px] border-y border-borderMain text-white">
+                  <td>
+                    <ActionButtons
+                      onDelete={() => handleDelete(initialData, row.id)}
+                      onAdd={handleAdd}
+                      id={row.id}
+                      onCurrentId={setCurrentId}
+                    />
+                  </td>
+                  <td className="w-[500px]">{row.rowName}</td>
+                  <td className="w-[140px]">{row.salary}</td>
+                  <td className="w-[120px]">{row.equipmentCosts}</td>
+                  <td>{row.overheads}</td>
+                  <td>{row.estimatedProfit}</td>
+                </tr>
+                {createRowMarkup(
+                  row,
+                  handleAdd,
+                  handleDelete,
+                  initialData,
+                  setCurrentId,
+                )}
+              </Fragment>
+            ))}
+          {/* Display form inputs if data is empty or isAdded is true*/}
+          {(initialData?.length === 0 || isAdded) && (
             <tr className="h-[60px]">
-              <th className="h-[42px] w-[110px] text-left font-normal">
-                Кнопки
+              <th className="h-[42px] text-left font-normal">
+                <ActionButtons
+                  onDelete={() => handleDelete(initialData, row.id)}
+                  onAdd={handleAdd}
+                  onCurrentId={setCurrentId}
+                />
               </th>
               <th className="h-[42px] w-[500px] text-left font-normal">
                 <input
@@ -255,24 +358,6 @@ const EditableTable = () => {
               </th>
             </tr>
           )}
-          {initialData?.length > 0 &&
-            initialData.map((row) => (
-              <Fragment key={row.id}>
-                <tr className="h-[60px] border-y border-borderMain text-white">
-                  <td>
-                    <ActionButtons
-                      onDelete={() => handleDelete(initialData, row.id)}
-                    />
-                  </td>
-                  <td>{row.rowName}</td>
-                  <td>{row.salary}</td>
-                  <td>{row.equipmentCosts}</td>
-                  <td>{row.overheads}</td>
-                  <td>{row.estimatedProfit}</td>
-                </tr>
-                {createRowMarkup(row, handleDelete, initialData)}
-              </Fragment>
-            ))}
         </tbody>
       </table>
 

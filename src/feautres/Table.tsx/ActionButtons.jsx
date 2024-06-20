@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const ActionButtons = ({ onAdd, onDelete, level, id }) => {
+const ActionButtons = ({ onAdd, onDelete, level, id, onCurrentId }) => {
   const [displayOn, setDisplayOn] = useState();
 
   const handleHover = () => {
@@ -9,6 +9,11 @@ const ActionButtons = ({ onAdd, onDelete, level, id }) => {
 
   const handleMouseLeave = () => {
     setDisplayOn(false);
+  };
+
+  const handleAdd = () => {
+    onAdd();
+    onCurrentId(id);
   };
 
   return (
@@ -30,7 +35,7 @@ const ActionButtons = ({ onAdd, onDelete, level, id }) => {
         {/* Конец линий */}
 
         {/* Кнопка редактирования */}
-        <button type="button" onClick={onAdd} onMouseEnter={handleHover}>
+        <button type="button" onClick={handleAdd} onMouseEnter={handleHover}>
           <img src="./editButton.svg" alt="" />
         </button>
 
