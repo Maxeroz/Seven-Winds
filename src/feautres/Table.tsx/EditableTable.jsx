@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
 // import ActionButtons from "./ActionButtons";
@@ -10,6 +10,7 @@ const createRowMarkup = (
   handleDelete,
   initialData,
   setCurrentId,
+  nestRef,
 ) => {
   return (
     row?.child &&
@@ -41,6 +42,7 @@ const createRowMarkup = (
               handleDelete,
               initialData,
               setCurrentId,
+              ++nestRef,
             )}
         </Fragment>
       );
@@ -54,6 +56,9 @@ const EditableTable = () => {
   const [error, setError] = useState("");
   const [isAdded, setIsAdded] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [isEdited, setIsEdited] = useState(false);
+
+  const nestRef = useRef(1);
 
   let initialLevel = 0;
 
@@ -176,67 +181,73 @@ const EditableTable = () => {
       materials: 0,
       mimExploitation: 0,
       overheads: formData.overheads,
-      parentId: formData.parentId || currentId || null,
+      parentId: currentId || null,
       rowName: formData.rowName,
       salary: formData.salary,
       supportCosts: 0,
     };
 
-    try {
-      const res = await fetch(
-        `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/create`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+    if (!isEdited) {
+      try {
+        const res = await fetch(
+          `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(newRow),
           },
-          body: JSON.stringify(newRow),
-        },
-      );
+        );
 
-      if (!res.ok) {
-        throw new Error("Failed to create row");
+        if (!res.ok) {
+          throw new Error("Failed to create row");
+        }
+
+        const data = await res.json();
+
+        if (initialData.length === 0) {
+          setInitialData((currentRows) => [
+            ...currentRows,
+            { ...data.current, child: [] },
+          ]);
+        }
+
+        // setInitialData((items) =>
+        //   items.map((item) =>
+        //     item.id === currentId
+        //       ? { ...item, child: [...item.child, data.current] }
+        //       : { ...item },
+        //   ),
+        // );
+
+        setInitialData((items) =>
+          getLevel(addChildToNestedItem(items, currentId, data)),
+        );
+
+        setIsAdded(false);
+        setCurrentId(null);
+
+        // let index = initialData.find((item) => item.id === currentId).level;
+        // console.log(index);
+
+        // setInitialData((currentRows) => [...currentRows, { ...data.current }]);
+
+        console.log("Row created successfully:", data);
+      } catch (error) {
+        console.error("Error creating row:", error);
       }
-
-      const data = await res.json();
-
-      if (initialData.length === 0) {
-        setInitialData((currentRows) => [
-          ...currentRows,
-          { ...data.current, child: [] },
-        ]);
-      }
-
-      // setInitialData((items) =>
-      //   items.map((item) =>
-      //     item.id === currentId
-      //       ? { ...item, child: [...item.child, data.current] }
-      //       : { ...item },
-      //   ),
-      // );
-
-      setInitialData((items) =>
-        getLevel(addChildToNestedItem(items, currentId, data)),
-      );
-
-      setIsAdded(false);
-      setCurrentId(null);
-
-      // let index = initialData.find((item) => item.id === currentId).level;
-      // console.log(index);
-
-      // setInitialData((currentRows) => [...currentRows, { ...data.current }]);
-
-      console.log("Row created successfully:", data);
-    } catch (error) {
-      console.error("Error creating row:", error);
     }
   };
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
     createRow();
+  };
+
+  const handleDoubleClick = (id) => {
+    // alert("Double Clicked");
+    setIsEdited(true);
   };
 
   return (
@@ -277,7 +288,10 @@ const EditableTable = () => {
           {initialData?.length > 0 &&
             initialData.map((row) => (
               <Fragment key={row.id}>
-                <tr className="h-[60px] border-y border-borderMain text-white">
+                <tr
+                  className="h-[60px] border-y border-borderMain text-white"
+                  onDoubleClick={() => handleDoubleClick(row.id)}
+                >
                   <td>
                     <ActionButtons
                       onDelete={() => handleDelete(initialData, row.id)}
@@ -286,18 +300,71 @@ const EditableTable = () => {
                       onCurrentId={setCurrentId}
                     />
                   </td>
-                  <td className="w-[500px]">{row.rowName}</td>
-                  <td className="w-[140px]">{row.salary}</td>
-                  <td className="w-[120px]">{row.equipmentCosts}</td>
-                  <td>{row.overheads}</td>
-                  <td>{row.estimatedProfit}</td>
+                  <td className="w-[500px]">
+                    {isEdited ? (
+                      <input
+                        type="text"
+                        defaultValue={row.rowName}
+                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] outline-none"
+                      />
+                    ) : (
+                      row.rowName
+                    )}
+                  </td>
+                  <td className="w-[140px]">
+                    {isEdited ? (
+                      <input
+                        type="number"
+                        defaultValue={row.salary}
+                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                      />
+                    ) : (
+                      row.salary
+                    )}
+                  </td>
+                  <td className="w-[120px]">
+                    {isEdited ? (
+                      <input
+                        type="number"
+                        defaultValue={row.equipmentCosts}
+                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                      />
+                    ) : (
+                      row.equipmentCosts
+                    )}
+                  </td>
+                  <td className="w-[120px]">
+                    {isEdited ? (
+                      <input
+                        type="number"
+                        defaultValue={row.overheads}
+                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                      />
+                    ) : (
+                      row.overheads
+                    )}
+                  </td>
+                  <td className="w-[120px]">
+                    {isEdited ? (
+                      <input
+                        type="number"
+                        defaultValue={row.estimatedProfit}
+                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                      />
+                    ) : (
+                      row.estimatedProfit
+                    )}
+                  </td>
                 </tr>
+
+                {/* Рекурсия для отображения вложенных рядов */}
                 {createRowMarkup(
                   row,
                   handleAdd,
                   handleDelete,
                   initialData,
                   setCurrentId,
+                  nestRef.current,
                 )}
               </Fragment>
             ))}
