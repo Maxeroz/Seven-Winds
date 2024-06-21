@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
-import { createRowMarkup } from "../../utils/editableTable";
+import { createRowMarkup } from "../../utils/createRowMarkUp.jsx";
 // import ActionButtons from "./ActionButtons";
 
 // Главный компонент таблицы
@@ -50,9 +50,26 @@ const EditableTable = () => {
   };
 
   const handleAdd = (id) => {
-    setCurrentId(id);
+    // setCurrentId(id);
     setIsAdded(true);
   };
+
+  // Функция для того чтобы посчитать длину вертикальной линии относительно количество элементов в своействе объекта child
+  function countElements(arr) {
+    let count = 0;
+
+    function recursiveCount(objArray) {
+      for (const obj of objArray) {
+        count++;
+        if (obj.child && Array.isArray(obj.child)) {
+          recursiveCount(obj.child);
+        }
+      }
+    }
+
+    recursiveCount(arr);
+    return count;
+  }
 
   const handleDelete = async (array, id) => {
     const modified = removeObjectByIdRecursive(array, id);
@@ -240,9 +257,6 @@ const EditableTable = () => {
         salary,
         supportCosts: 0,
       };
-
-      console.log(id);
-      console.log(updatedRowObj);
 
       try {
         const res = await fetch(
@@ -474,7 +488,6 @@ const EditableTable = () => {
               </Fragment>
             ))}
           {/* Отобразить форм инпуты если data пустое и isAdded === true */}
-
           {(initialData?.length === 0 || isAdded) && (
             <tr className="h-[60px]">
               <th className="h-[42px] text-left font-normal">

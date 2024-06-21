@@ -16,11 +16,11 @@ export const createRowMarkup = (
 ) => {
   return (
     row?.child &&
-    row?.child.map((childRow) => {
+    row?.child.map((childRow, i) => {
       return (
         <Fragment key={childRow.id}>
           <tr
-            className="h-[60px] border-y border-borderMain text-white"
+            className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
             onDoubleClick={() => handleDoubleClick(childRow.id)}
           >
             <td style={{ paddingLeft: `${row.level * 30}px` }}>
@@ -31,6 +31,7 @@ export const createRowMarkup = (
                   id={childRow.id}
                   onAdd={onAdd}
                   onCurrentId={setCurrentId}
+                  firstChild={i === 0}
                 />
               }
             </td>
