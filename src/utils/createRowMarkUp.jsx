@@ -13,6 +13,7 @@ export const createRowMarkup = (
   isEdited,
   currentId,
   handleChange,
+  setCurrentObj,
 ) => {
   return (
     row?.child &&
@@ -32,6 +33,8 @@ export const createRowMarkup = (
                   onAdd={onAdd}
                   onCurrentId={setCurrentId}
                   firstChild={i === 0}
+                  array={initialData}
+                  onCurrentObj={setCurrentObj}
                 />
               }
             </td>
@@ -118,6 +121,7 @@ export const createRowMarkup = (
               isEdited,
               currentId,
               handleChange,
+              setCurrentObj,
             )}
         </Fragment>
       );

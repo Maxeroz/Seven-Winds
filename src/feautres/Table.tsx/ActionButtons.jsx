@@ -1,5 +1,21 @@
 import React, { useState } from "react";
 
+// Рекурсивная функция для поиска объекта по id в массиве с бесконечной вложенностью.
+const findObjectById = (array, id, childKey = "child") => {
+  for (const item of array) {
+    if (item.id === id) {
+      return item;
+    }
+    if (item[childKey]) {
+      const result = findObjectById(item[childKey], id, childKey);
+      if (result) {
+        return result;
+      }
+    }
+  }
+  return null;
+};
+
 const ActionButtons = ({
   onAdd,
   onDelete,
@@ -8,8 +24,13 @@ const ActionButtons = ({
   onCurrentId,
   isEdited,
   firstChild,
+  array,
+  onCurrentObj,
+  isAdded,
 }) => {
   const [displayOn, setDisplayOn] = useState();
+  // Array состояние рядов приложения
+  const isArrayEmpty = array.length === 0;
 
   const handleHover = () => {
     setDisplayOn(true);
@@ -22,6 +43,8 @@ const ActionButtons = ({
   const handleAdd = () => {
     onAdd();
     onCurrentId(id);
+
+    onCurrentObj(findObjectById(array, id));
   };
 
   return (
@@ -49,7 +72,7 @@ const ActionButtons = ({
           onClick={handleAdd}
           onMouseEnter={handleHover}
           className="relative z-20"
-          disabled={isEdited}
+          disabled={isEdited || isArrayEmpty || isAdded}
         >
           <img src="./editButton.svg" alt="" />
         </button>
@@ -60,7 +83,7 @@ const ActionButtons = ({
             type="button"
             onClick={onDelete}
             className="relative z-20"
-            disabled={isEdited}
+            disabled={isEdited || isArrayEmpty || isAdded}
           >
             <img src="./deleteButton.svg" alt="" />
           </button>

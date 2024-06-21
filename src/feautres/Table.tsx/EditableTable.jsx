@@ -13,6 +13,7 @@ const EditableTable = () => {
   const [isAdded, setIsAdded] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [isEdited, setIsEdited] = useState(false);
+  const [currentObj, setCurrentObj] = useState({});
 
   // Состояние формы
   const [formData, setFormData] = useState({
@@ -31,26 +32,22 @@ const EditableTable = () => {
 
   let initialLevel = 0;
 
-  const getLevel = (rows) => {
-    const modifiedRows = rows.map((item) => {
+  const getLevel = (rows, level = 1) => {
+    return rows.map((item) => {
+      const newItem = { ...item, level };
+
       if (item.child) {
-        const obj = {
-          ...item, // Копирование свойств из исходного элемента
-          level: ++initialLevel,
-          child: getLevel(item.child), // Добавление нового свойства
-        };
-        initialLevel = 0;
-        return obj;
+        newItem.child = getLevel(item.child, level + 1);
       }
 
-      return { ...item, level: 0 };
+      return newItem;
     });
-
-    return modifiedRows;
   };
 
   const handleAdd = (id) => {
     // setCurrentId(id);
+
+    setCurrentObj({});
     setIsAdded(true);
   };
 
@@ -208,9 +205,11 @@ const EditableTable = () => {
           ]);
         }
 
-        setInitialData((items) =>
-          getLevel(addChildToNestedItem(items, currentId, data)),
-        );
+        setInitialData((items) => {
+          const result = getLevel(addChildToNestedItem(items, currentId, data));
+          console.log(result);
+          return result;
+        });
 
         setIsAdded(false);
         setCurrentId(null);
@@ -385,7 +384,7 @@ const EditableTable = () => {
           )}
 
           {initialData?.length > 0 &&
-            initialData.map((row) => (
+            initialData.map((row, i) => (
               <Fragment key={row.id}>
                 {/* Основной ряд таблицы */}
                 <tr
@@ -399,6 +398,8 @@ const EditableTable = () => {
                       id={row.id}
                       onCurrentId={setCurrentId}
                       isEdited={isEdited}
+                      array={initialData}
+                      onCurrentObj={setCurrentObj}
                     />
                   </td>
                   {/* Имя строки или инпут для редактирования */}
@@ -484,18 +485,27 @@ const EditableTable = () => {
                   isEdited,
                   currentId,
                   handleChange,
+                  setCurrentObj,
                 )}
               </Fragment>
             ))}
           {/* Отобразить форм инпуты если data пустое и isAdded === true */}
           {(initialData?.length === 0 || isAdded) && (
             <tr className="h-[60px]">
-              <th className="h-[42px] text-left font-normal">
+              <th
+                className="h-[42px] text-left font-normal"
+                style={{ paddingLeft: `${currentObj.level * 30}px` }}
+              >
                 <ActionButtons
                   onDelete={() => handleDelete(initialData, row.id)}
                   onAdd={handleAdd}
                   onCurrentId={setCurrentId}
                   isEdited={isEdited}
+                  isAdded={isAdded}
+                  level={initialData?.length === 0 ? "" : "child"}
+                  array={initialData}
+                  onCurrentObj={setCurrentObj}
+                  firstChild={initialData[0].id === currentId}
                 />
               </th>
               <th className="h-[42px] w-[500px] text-left font-normal">
