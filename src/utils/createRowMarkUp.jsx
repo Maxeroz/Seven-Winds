@@ -1,6 +1,18 @@
 import { Fragment } from "react";
 import ActionButtons from "../feautres/Table.tsx/ActionButtons";
 
+const getLevel = (rows, level = 1) => {
+  return rows.map((item) => {
+    const newItem = { ...item, level };
+
+    if (item.child) {
+      newItem.child = getLevel(item.child, level + 1);
+    }
+
+    return newItem;
+  });
+};
+
 // Рекурсивная функция для создания рядов таблицы
 export const createRowMarkup = (
   row,
@@ -16,6 +28,7 @@ export const createRowMarkup = (
   handleChange,
   setCurrentObj,
   lineHeight,
+  findObjectAndInsert,
 ) => {
   return (
     row?.child &&
@@ -113,6 +126,9 @@ export const createRowMarkup = (
               )}
             </td>
           </tr>
+          {isAdded && currentId === childRow.id && (
+            <tr className="h-[60px]">Hello Input</tr>
+          )}
           {childRow.child &&
             createRowMarkup(
               childRow,

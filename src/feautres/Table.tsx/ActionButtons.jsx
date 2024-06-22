@@ -1,37 +1,69 @@
 import React, { useEffect, useState } from "react";
 
-function findObjectsFromLevelById(data, targetId) {
+function findObjectsFromLevelById(data, parentId, targetId) {
   // Функция для рекурсивного поиска объекта по id
-  function findObjectRecursive(obj, id, currentLevel) {
-    // Если текущий объект совпадает по id, возвращаем текущий уровень и дальнейшие объекты
-    if (obj.id === id) {
-      return [obj];
+  function findObjectRecursive(obj, parentId, targetId) {
+    // Если текущий объект совпадает по id с parentId, начинаем добавлять его дочерние элементы
+    if (obj.id === parentId) {
+      const result = [];
+      // Рекурсивно добавляем дочерние элементы, пока не достигнем объекта с targetId
+      for (const child of obj.child || []) {
+        if (child.id === targetId) {
+          return result; // Останавливаем добавление при достижении объекта с targetId
+        }
+        result.push(child);
+        const nestedResult = findObjectRecursive(child, parentId, targetId);
+        result.push(...nestedResult);
+      }
+      return result;
     }
 
     // Если у объекта есть children, рекурсивно ищем в них
     if (obj.child && obj.child.length > 0) {
       for (const child of obj.child) {
-        const result = findObjectRecursive(child, id, currentLevel + 1);
-        if (result) {
-          // Если объект найден в дочерних элементах, возвращаем результат
-          return [...result];
+        const result = findObjectRecursive(child, parentId, targetId);
+        if (result.length > 0) {
+          return result; // Если найдены объекты до targetId, возвращаем результат
         }
       }
     }
 
-    return null; // Если объект не найден
+    return []; // Если объект не найден или достигнут targetId
   }
 
   // Проверяем каждый элемент массива data
   for (const obj of data) {
-    const result = findObjectRecursive(obj, targetId, 1); // Начинаем с уровня 1
-    if (result) {
+    const result = findObjectRecursive(obj, parentId, targetId); // Начинаем с уровня 1
+    if (result.length > 0) {
       return result;
     }
   }
 
-  // Если объект с заданным id не найден, возвращаем пустой массив
+  // Если объект с parentId не найден, возвращаем пустой массив
   return [];
+}
+
+function findParentId(root, targetId) {
+  console.log(root, targetId);
+  // Вспомогательная функция для рекурсивного поиска родителя
+  function findParent(currentObj, parentId = null) {
+    // Проверяем, если текущий объект имеет целевой ID, возвращаем ID родителя
+    if (currentObj.id === targetId) {
+      return parentId;
+    }
+    // Если есть дети, рекурсивно проходим по ним
+    if (currentObj.child && currentObj.child.length > 0) {
+      for (let child of currentObj.child) {
+        let result = findParent(child, currentObj.id);
+        if (result !== null) {
+          return result;
+        }
+      }
+    }
+    return null; // Если ничего не найдено, возвращаем null
+  }
+
+  return findParent(root);
 }
 
 // Рекурсивная функция для поиска объекта по id в массиве с бесконечной вложенностью.
@@ -80,10 +112,12 @@ const ActionButtons = ({
   isAdded,
   lineHeight,
   currentId,
+  findObjectAndInsert,
 }) => {
   const [displayOn, setDisplayOn] = useState();
   const [fullLine, setFullLine] = useState(null);
-  const [currentArray, setCurrentArray] = useState([]);
+  const [localArray, setLocalArray] = useState([]);
+  const [resultId, setResultId] = useState();
   // Array состояние рядов приложения
   const isArrayEmpty = array.length === 0;
 
@@ -93,6 +127,19 @@ const ActionButtons = ({
   //   }
   //   if (array) setCurrentArray(findObjectsFromLevelById(array, id));
   // }, [currentId]);
+
+  useEffect(() => {
+    if (array && id) {
+      const resultId = findParentId({ child: array }, id);
+      setResultId(resultId);
+
+      // if (resultId) {
+      //   // setLocalArray(getObjectsFromId(array, resultId));
+      setLocalArray(findObjectsFromLevelById(array, resultId, id));
+      setFullLine(countElements(localArray) + 1);
+      // }
+    }
+  }, [array, id, resultId]);
 
   const handleHover = () => {
     setDisplayOn(true);
@@ -168,7 +215,7 @@ const ActionButtons = ({
           <>
             <div
               className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton`}
-              // style={{ height: fullLine * 55 }}
+              style={{ height: fullLine * 55 }}
             ></div>
             <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
           </>

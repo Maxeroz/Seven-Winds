@@ -50,6 +50,33 @@ const EditableTable = () => {
       setCurrentArray(findObjectsFromLevelById(initialData, currentId));
   }, [currentId]);
 
+  // Функция для поиска объекта по id и добавления пустого объекта после него
+  function findObjectAndInsert(data, targetId) {
+    // Рекурсивная функция для поиска объекта по id
+    function findObjectRecursive(objArray, id) {
+      for (let i = 0; i < objArray.length; i++) {
+        const obj = objArray[i];
+        if (obj.id === id) {
+          // Найден объект с заданным id, добавляем пустой объект после него
+          objArray.splice(i + 1, 0, {});
+          return true; // Возвращаем true, чтобы прекратить дальнейший поиск
+        }
+        // Рекурсивно ищем в дочерних элементах, если они есть
+        if (obj.child && obj.child.length > 0) {
+          if (findObjectRecursive(obj.child, id)) {
+            return true; // Возвращаем true, чтобы прекратить дальнейший поиск
+          }
+        }
+      }
+      return false; // Объект с заданным id не найден
+    }
+
+    // Ищем объект по id в массиве data
+    findObjectRecursive(data, targetId);
+
+    return data; // Возвращаем измененный массив
+  }
+
   function findObjectsFromLevelById(data, targetId) {
     // Функция для рекурсивного поиска объекта по id
     function findObjectRecursive(obj, id, currentLevel) {
@@ -95,6 +122,12 @@ const EditableTable = () => {
       return newItem;
     });
   };
+
+  useEffect(() => {
+    if ((initialData, currentId)) {
+      const updatedArray = findObjectAndInsert(initialData, currentId);
+    }
+  }, [initialData]);
 
   const handleAdd = (id) => {
     // setCurrentId(id);
@@ -550,8 +583,10 @@ const EditableTable = () => {
                 </Fragment>
               );
             })}
-          {/* Отобразить форм инпуты если data пустое и isAdded === true */}
-          {(initialData?.length === 0 || isAdded) && (
+
+          {/* Отобразить форм инпуты в конце если data пустое и isAdded === true */}
+          {(initialData?.length === 0 ||
+            (isAdded && currentObj.level === 1)) && (
             <tr className="h-[60px]">
               <th
                 className="h-[42px] text-left font-normal"
