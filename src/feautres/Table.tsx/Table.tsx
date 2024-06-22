@@ -1,6 +1,5 @@
 import MainTable from "./MainTable";
 import Rows from "./Rows";
-import TreeList from "./TreeList";
 
 export default function Table() {
   return (

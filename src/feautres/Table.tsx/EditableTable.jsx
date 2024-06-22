@@ -35,35 +35,31 @@ const EditableTable = () => {
   let initialLevel = 0;
 
   useEffect(() => {
-    if (currentArray) {
-      setLineHeight(countElements(currentArray));
-    }
-  }, [currentId]);
-
-  useEffect(() => {
     if (initialData) {
       setLineHeight(
         countElements(findObjectsFromLevelById(initialData, currentId)),
       );
     }
-    if (initialData)
-      setCurrentArray(findObjectsFromLevelById(initialData, currentId));
-  }, [currentId]);
+    // if (initialData)
+    //   setCurrentArray(findObjectsFromLevelById(initialData, currentId));
+  }, [currentId, initialData]);
 
-  // Функция для поиска объекта по id и добавления пустого объекта после него
-  function findObjectAndInsert(data, targetId) {
+  function findObjectAndInsert(data, parentId, targetId) {
     // Рекурсивная функция для поиска объекта по id
-    function findObjectRecursive(objArray, id) {
+    function findObjectRecursive(objArray, parentId, targetId) {
       for (let i = 0; i < objArray.length; i++) {
         const obj = objArray[i];
-        if (obj.id === id) {
-          // Найден объект с заданным id, добавляем пустой объект после него
-          objArray.splice(i + 1, 0, {});
+        if (obj.id === parentId) {
+          // Найден объект с заданным parentId, добавляем новый объект после всех объектов текущего уровня
+          if (targetId !== undefined) {
+            // Добавляем новый объект с id: 12345 в конец текущего уровня
+            objArray.push({ id: 12345 });
+          }
           return true; // Возвращаем true, чтобы прекратить дальнейший поиск
         }
         // Рекурсивно ищем в дочерних элементах, если они есть
         if (obj.child && obj.child.length > 0) {
-          if (findObjectRecursive(obj.child, id)) {
+          if (findObjectRecursive(obj.child, parentId, targetId)) {
             return true; // Возвращаем true, чтобы прекратить дальнейший поиск
           }
         }
@@ -72,7 +68,7 @@ const EditableTable = () => {
     }
 
     // Ищем объект по id в массиве data
-    findObjectRecursive(data, targetId);
+    findObjectRecursive(data, parentId, targetId);
 
     return data; // Возвращаем измененный массив
   }
@@ -123,16 +119,13 @@ const EditableTable = () => {
     });
   };
 
-  useEffect(() => {
-    if ((initialData, currentId)) {
-      const updatedArray = findObjectAndInsert(initialData, currentId);
-    }
-  }, [initialData]);
+  const handleInsert = (initialData, parentId, targetId) => {
+    setInitialData(findObjectAndInsert(initialData, parentId, targetId));
+  };
 
   const handleAdd = (id) => {
     // setCurrentId(id);
-    setLineHeight(0);
-    setCurrentObj({});
+
     setIsAdded(true);
   };
 
@@ -160,7 +153,9 @@ const EditableTable = () => {
       method: "DELETE",
     });
 
+    setLineHeight(0);
     setInitialData(modified);
+    setCurrentArray(modified);
   };
 
   const removeObjectByIdRecursive = (array, id) => {
@@ -178,6 +173,7 @@ const EditableTable = () => {
       .filter((item) => item.id !== id); // Удаляем элемент только на текущем уровне
   };
 
+  // FETCH ON MOUNT _________________________________________________________
   useEffect(() => {
     const fetchData = async function (url, id) {
       setIsLoading(true);
@@ -298,24 +294,26 @@ const EditableTable = () => {
         });
 
         setIsAdded(false);
-        setCurrentId(null);
-
-        setFormData({
-          id: 0,
-          rowName: "",
-          salary: 0,
-          equipmentCosts: 0,
-          overheads: 0,
-          estimatedProfit: 0,
-          level: 0,
-          parentId: undefined,
-          child: [],
-        });
-
-        console.log("Row created successfully:", data);
       } catch (error) {
         console.error("Error creating row:", error);
       }
+
+      setFormData({
+        id: 0,
+        rowName: "",
+        salary: 0,
+        equipmentCosts: 0,
+        overheads: 0,
+        estimatedProfit: 0,
+        level: 0,
+        parentId: undefined,
+        child: [],
+      });
+
+      setCurrentObj({});
+      setLineHeight(0);
+      setCurrentId(null);
+      if (!isAdded) setIsAdded(true);
     }
 
     // Обновление ряда начинается здесь.
@@ -367,6 +365,7 @@ const EditableTable = () => {
         setError(error.message);
       } finally {
         setIsEdited(false);
+
         setFormData({
           id: 0,
           rowName: "",
@@ -378,6 +377,9 @@ const EditableTable = () => {
           parentId: undefined,
           child: [],
         });
+
+        setCurrentObj({});
+        setIsAdded(false);
       }
     }
   };
@@ -405,10 +407,11 @@ const EditableTable = () => {
   };
 
   const handleDoubleClick = (rowId) => {
-    if (!isAdded) {
-      setCurrentId(rowId);
-      setIsEdited(true);
-    }
+    setIsEdited(true);
+    setIsAdded(false);
+
+    setCurrentId(rowId);
+
     // Деструктурировать текущий редактируемый объект для того чтобы установить текущее состояние инпутов в formData
     const {
       id,
@@ -488,9 +491,11 @@ const EditableTable = () => {
                         isEdited={isEdited}
                         isAdded={isAdded}
                         array={initialData}
+                        firstChild={true}
                         onCurrentObj={setCurrentObj}
                         lineHeight={lineHeight}
                         currentId={currentId}
+                        handleInsert={handleInsert}
                       />
                     </td>
                     {/* Имя строки или инпут для редактирования */}
@@ -579,6 +584,8 @@ const EditableTable = () => {
                     handleChange,
                     setCurrentObj,
                     lineHeight,
+                    formData,
+                    handleInsert,
                   )}
                 </Fragment>
               );
@@ -601,9 +608,9 @@ const EditableTable = () => {
                   level={initialData?.length === 0 ? "" : "child"}
                   array={initialData}
                   onCurrentObj={setCurrentObj}
-                  firstChild={initialData[0]?.id === currentId}
                   lineHeight={lineHeight}
                   currentId={currentId}
+                  handleInsert={handleInsert}
                 />
               </th>
               <th className="h-[42px] w-[500px] text-left font-normal">

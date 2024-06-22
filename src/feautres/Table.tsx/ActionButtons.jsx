@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 function findObjectsFromLevelById(data, parentId, targetId) {
   // Функция для рекурсивного поиска объекта по id
@@ -44,7 +44,6 @@ function findObjectsFromLevelById(data, parentId, targetId) {
 }
 
 function findParentId(root, targetId) {
-  console.log(root, targetId);
   // Вспомогательная функция для рекурсивного поиска родителя
   function findParent(currentObj, parentId = null) {
     // Проверяем, если текущий объект имеет целевой ID, возвращаем ID родителя
@@ -106,40 +105,33 @@ const ActionButtons = ({
   id,
   onCurrentId,
   isEdited,
+  isAdded,
   firstChild,
   array,
   onCurrentObj,
-  isAdded,
   lineHeight,
   currentId,
-  findObjectAndInsert,
 }) => {
-  const [displayOn, setDisplayOn] = useState();
+  const [displayOn, setDisplayOn] = useState(false);
   const [fullLine, setFullLine] = useState(null);
-  const [localArray, setLocalArray] = useState([]);
-  const [resultId, setResultId] = useState();
-  // Array состояние рядов приложения
-  const isArrayEmpty = array.length === 0;
+  const [computedParentId, setComputedParentId] = useState(null);
+  const [newBetweenItemsArray, setNewBetweenItemsArray] = useState([]);
 
-  // useEffect(() => {
-  //   if (array) {
-  //     setFullLine(countElements(findObjectsFromLevelById(array, id)));
-  //   }
-  //   if (array) setCurrentArray(findObjectsFromLevelById(array, id));
-  // }, [currentId]);
-
+  // Calculate computedParentId and newBetweenItemsArray
   useEffect(() => {
     if (array && id) {
-      const resultId = findParentId({ child: array }, id);
-      setResultId(resultId);
-
-      // if (resultId) {
-      //   // setLocalArray(getObjectsFromId(array, resultId));
-      setLocalArray(findObjectsFromLevelById(array, resultId, id));
-      setFullLine(countElements(localArray) + 1);
-      // }
+      const parentId = findParentId({ child: array }, id);
+      setComputedParentId(parentId);
+      const betweenItemsArray = findObjectsFromLevelById(array, parentId, id);
+      setNewBetweenItemsArray(betweenItemsArray);
     }
-  }, [array, id, resultId]);
+  }, [array, id]);
+
+  // Update fullLine based on newBetweenItemsArray
+  useEffect(() => {
+    const newFullLine = countElements(newBetweenItemsArray) + 1;
+    setFullLine(newFullLine);
+  }, [newBetweenItemsArray]);
 
   const handleHover = () => {
     setDisplayOn(true);
@@ -150,10 +142,11 @@ const ActionButtons = ({
   };
 
   const handleAdd = () => {
+    // RESET STATE
     if (currentId === id) return;
     onAdd();
-    onCurrentId(id);
 
+    onCurrentId(id);
     onCurrentObj(findObjectById(array, id));
   };
 
@@ -167,7 +160,11 @@ const ActionButtons = ({
           <>
             <div
               className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton`}
-              style={{ height: lineHeight * 55 }}
+              style={
+                firstChild
+                  ? { height: lineHeight * 50 }
+                  : { height: lineHeight * 55 }
+              }
             ></div>
             <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
           </>
@@ -186,7 +183,7 @@ const ActionButtons = ({
             onClick={handleAdd}
             onMouseEnter={handleHover}
             className="relative z-20"
-            disabled={!id}
+            disabled={isEdited || !id || isAdded}
           >
             <img src="./editButton.svg" alt="" />
           </button>
@@ -197,7 +194,7 @@ const ActionButtons = ({
               type="button"
               onClick={onDelete}
               className="relative z-20"
-              disabled={isAdded}
+              // disabled={isAdded}
             >
               <img src="./deleteButton.svg" alt="" />
             </button>
@@ -215,7 +212,11 @@ const ActionButtons = ({
           <>
             <div
               className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton`}
-              style={{ height: fullLine * 55 }}
+              style={
+                firstChild
+                  ? { height: fullLine * 55 }
+                  : { height: fullLine * 60 }
+              }
             ></div>
             <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
           </>
@@ -234,7 +235,7 @@ const ActionButtons = ({
             onClick={handleAdd}
             onMouseEnter={handleHover}
             className="relative z-20"
-            disabled={isEdited || isArrayEmpty || isAdded}
+            disabled={isAdded || isEdited}
           >
             <img src="./editButton.svg" alt="" />
           </button>
@@ -245,7 +246,7 @@ const ActionButtons = ({
               type="button"
               onClick={onDelete}
               className="relative z-20"
-              disabled={isEdited || isArrayEmpty || isAdded}
+              disabled={isEdited || isAdded}
             >
               <img src="./deleteButton.svg" alt="" />
             </button>
