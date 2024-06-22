@@ -11,9 +11,11 @@ export const createRowMarkup = (
   nestRef,
   handleDoubleClick,
   isEdited,
+  isAdded,
   currentId,
   handleChange,
   setCurrentObj,
+  lineHeight,
 ) => {
   return (
     row?.child &&
@@ -30,11 +32,13 @@ export const createRowMarkup = (
                   level="child"
                   onDelete={() => handleDelete(initialData, childRow.id)}
                   id={childRow.id}
+                  isAdded={false}
                   onAdd={onAdd}
                   onCurrentId={setCurrentId}
                   firstChild={i === 0}
                   array={initialData}
                   onCurrentObj={setCurrentObj}
+                  lineHeight={lineHeight}
                 />
               }
             </td>
@@ -119,9 +123,11 @@ export const createRowMarkup = (
               ++nestRef,
               handleDoubleClick,
               isEdited,
+              isAdded,
               currentId,
               handleChange,
               setCurrentObj,
+              lineHeight,
             )}
         </Fragment>
       );

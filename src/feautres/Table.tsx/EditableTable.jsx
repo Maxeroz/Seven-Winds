@@ -8,12 +8,14 @@ import { createRowMarkup } from "../../utils/createRowMarkUp.jsx";
 const EditableTable = () => {
   // Состояния компонента
   const [initialData, setInitialData] = useState(null);
+  const [currentArray, setCurrentArray] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isAdded, setIsAdded] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [isEdited, setIsEdited] = useState(false);
   const [currentObj, setCurrentObj] = useState({});
+  const [lineHeight, setLineHeight] = useState(null);
 
   // Состояние формы
   const [formData, setFormData] = useState({
@@ -32,6 +34,56 @@ const EditableTable = () => {
 
   let initialLevel = 0;
 
+  useEffect(() => {
+    if (currentArray) {
+      setLineHeight(countElements(currentArray));
+    }
+  }, [currentId]);
+
+  useEffect(() => {
+    if (initialData) {
+      setLineHeight(
+        countElements(findObjectsFromLevelById(initialData, currentId)),
+      );
+    }
+    if (initialData)
+      setCurrentArray(findObjectsFromLevelById(initialData, currentId));
+  }, [currentId]);
+
+  function findObjectsFromLevelById(data, targetId) {
+    // Функция для рекурсивного поиска объекта по id
+    function findObjectRecursive(obj, id, currentLevel) {
+      // Если текущий объект совпадает по id, возвращаем текущий уровень и дальнейшие объекты
+      if (obj.id === id) {
+        return [obj];
+      }
+
+      // Если у объекта есть children, рекурсивно ищем в них
+      if (obj.child && obj.child.length > 0) {
+        for (const child of obj.child) {
+          const result = findObjectRecursive(child, id, currentLevel + 1);
+          if (result) {
+            // Если объект найден в дочерних элементах, возвращаем результат
+            return [...result];
+          }
+        }
+      }
+
+      return null; // Если объект не найден
+    }
+
+    // Проверяем каждый элемент массива data
+    for (const obj of data) {
+      const result = findObjectRecursive(obj, targetId, 1); // Начинаем с уровня 1
+      if (result) {
+        return result;
+      }
+    }
+
+    // Если объект с заданным id не найден, возвращаем пустой массив
+    return [];
+  }
+
   const getLevel = (rows, level = 1) => {
     return rows.map((item) => {
       const newItem = { ...item, level };
@@ -46,7 +98,7 @@ const EditableTable = () => {
 
   const handleAdd = (id) => {
     // setCurrentId(id);
-
+    setLineHeight(0);
     setCurrentObj({});
     setIsAdded(true);
   };
@@ -107,6 +159,7 @@ const EditableTable = () => {
         const data = await res.json();
 
         setInitialData(getLevel(data));
+        setCurrentArray(data);
 
         return data;
       } catch (error) {
@@ -319,8 +372,10 @@ const EditableTable = () => {
   };
 
   const handleDoubleClick = (rowId) => {
-    setCurrentId(rowId);
-    setIsEdited(true);
+    if (!isAdded) {
+      setCurrentId(rowId);
+      setIsEdited(true);
+    }
     // Деструктурировать текущий редактируемый объект для того чтобы установить текущее состояние инпутов в formData
     const {
       id,
@@ -382,113 +437,119 @@ const EditableTable = () => {
               <th className="text-left">Error fetching data...</th>
             </tr>
           )}
-
           {initialData?.length > 0 &&
-            initialData.map((row, i) => (
-              <Fragment key={row.id}>
-                {/* Основной ряд таблицы */}
-                <tr
-                  className="h-[60px] border-y border-borderMain text-white"
-                  onDoubleClick={() => handleDoubleClick(row.id)}
-                >
-                  <td>
-                    <ActionButtons
-                      onDelete={() => handleDelete(initialData, row.id)}
-                      onAdd={handleAdd}
-                      id={row.id}
-                      onCurrentId={setCurrentId}
-                      isEdited={isEdited}
-                      array={initialData}
-                      onCurrentObj={setCurrentObj}
-                    />
-                  </td>
-                  {/* Имя строки или инпут для редактирования */}
-                  <td className="w-[500px]">
-                    {isEdited && currentId === row.id ? (
-                      <input
-                        type="text"
-                        name="rowName"
-                        defaultValue={row.rowName}
-                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] outline-none"
-                        onChange={handleChange}
+            initialData.map((row, i) => {
+              return (
+                <Fragment key={row.id}>
+                  {/* Основной ряд таблицы */}
+                  <tr
+                    className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+                    onDoubleClick={() => handleDoubleClick(row.id)}
+                  >
+                    <td>
+                      <ActionButtons
+                        onDelete={() => handleDelete(initialData, row.id)}
+                        onAdd={handleAdd}
+                        id={row.id}
+                        onCurrentId={setCurrentId}
+                        isEdited={isEdited}
+                        isAdded={isAdded}
+                        array={initialData}
+                        onCurrentObj={setCurrentObj}
+                        lineHeight={lineHeight}
+                        currentId={currentId}
                       />
-                    ) : (
-                      row.rowName
-                    )}
-                  </td>
-                  {/* Зарплата или инпут для редактирования */}
-                  <td className="w-[140px]">
-                    {isEdited && currentId === row.id ? (
-                      <input
-                        type="number"
-                        name="salary"
-                        defaultValue={row.salary}
-                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      row.salary
-                    )}
-                  </td>
-                  {/* Расходы на оборудование или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    {isEdited && currentId === row.id ? (
-                      <input
-                        type="number"
-                        name="equipmentCosts"
-                        defaultValue={row.equipmentCosts}
-                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      row.equipmentCosts
-                    )}
-                  </td>
-                  {/* Накладные расходы или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    {isEdited && currentId === row.id ? (
-                      <input
-                        type="number"
-                        name="overheads"
-                        defaultValue={row.overheads}
-                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      row.overheads
-                    )}
-                  </td>
-                  {/* Ожидаемая прибыль или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    {isEdited && currentId === row.id ? (
-                      <input
-                        type="number"
-                        name="estimatedProfit"
-                        defaultValue={row.estimatedProfit}
-                        className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                        onChange={handleChange}
-                      />
-                    ) : (
-                      row.estimatedProfit
-                    )}
-                  </td>
-                </tr>
-                {/* Рекурсия для отображения вложенных рядов */}
-                {createRowMarkup(
-                  row,
-                  handleAdd,
-                  handleDelete,
-                  initialData,
-                  setCurrentId,
-                  nestRef.current,
-                  handleDoubleClick,
-                  isEdited,
-                  currentId,
-                  handleChange,
-                  setCurrentObj,
-                )}
-              </Fragment>
-            ))}
+                    </td>
+                    {/* Имя строки или инпут для редактирования */}
+                    <td className="w-[500px]">
+                      {isEdited && currentId === row.id ? (
+                        <input
+                          type="text"
+                          name="rowName"
+                          defaultValue={row.rowName}
+                          className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] outline-none"
+                          onChange={handleChange}
+                        />
+                      ) : (
+                        row.rowName
+                      )}
+                    </td>
+                    {/* Зарплата или инпут для редактирования */}
+                    <td className="w-[140px]">
+                      {isEdited && currentId === row.id ? (
+                        <input
+                          type="number"
+                          name="salary"
+                          defaultValue={row.salary}
+                          className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                          onChange={handleChange}
+                        />
+                      ) : (
+                        row.salary
+                      )}
+                    </td>
+                    {/* Расходы на оборудование или инпут для редактирования */}
+                    <td className="w-[120px]">
+                      {isEdited && currentId === row.id ? (
+                        <input
+                          type="number"
+                          name="equipmentCosts"
+                          defaultValue={row.equipmentCosts}
+                          className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                          onChange={handleChange}
+                        />
+                      ) : (
+                        row.equipmentCosts
+                      )}
+                    </td>
+                    {/* Накладные расходы или инпут для редактирования */}
+                    <td className="w-[120px]">
+                      {isEdited && currentId === row.id ? (
+                        <input
+                          type="number"
+                          name="overheads"
+                          defaultValue={row.overheads}
+                          className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                          onChange={handleChange}
+                        />
+                      ) : (
+                        row.overheads
+                      )}
+                    </td>
+                    {/* Ожидаемая прибыль или инпут для редактирования */}
+                    <td className="w-[120px]">
+                      {isEdited && currentId === row.id ? (
+                        <input
+                          type="number"
+                          name="estimatedProfit"
+                          defaultValue={row.estimatedProfit}
+                          className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
+                          onChange={handleChange}
+                        />
+                      ) : (
+                        row.estimatedProfit
+                      )}
+                    </td>
+                  </tr>
+                  {/* Рекурсия для отображения вложенных рядов */}
+                  {createRowMarkup(
+                    row,
+                    handleAdd,
+                    handleDelete,
+                    initialData,
+                    setCurrentId,
+                    nestRef.current,
+                    handleDoubleClick,
+                    isEdited,
+                    isAdded,
+                    currentId,
+                    handleChange,
+                    setCurrentObj,
+                    lineHeight,
+                  )}
+                </Fragment>
+              );
+            })}
           {/* Отобразить форм инпуты если data пустое и isAdded === true */}
           {(initialData?.length === 0 || isAdded) && (
             <tr className="h-[60px]">
@@ -505,7 +566,9 @@ const EditableTable = () => {
                   level={initialData?.length === 0 ? "" : "child"}
                   array={initialData}
                   onCurrentObj={setCurrentObj}
-                  firstChild={initialData[0].id === currentId}
+                  firstChild={initialData[0]?.id === currentId}
+                  lineHeight={lineHeight}
+                  currentId={currentId}
                 />
               </th>
               <th className="h-[42px] w-[500px] text-left font-normal">
