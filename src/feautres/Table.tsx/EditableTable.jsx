@@ -230,7 +230,7 @@ const EditableTable = () => {
 
     setFormData({
       ...formData,
-      [name]: name === "rowName" ? value : parseFloat(value),
+      [name]: name === "rowName" ? value : value === "" ? 0 : parseFloat(value),
     });
   };
 
@@ -297,11 +297,10 @@ const EditableTable = () => {
 
         const data = await res.json();
 
-        const updatedInitialStateArray = updateNestedRow(
-          initialData,
-          EMPTY_ID,
-          { ...data.current, child: [] },
-        );
+        let updatedInitialStateArray = updateNestedRow(initialData, EMPTY_ID, {
+          ...data.current,
+          child: [],
+        });
 
         setInitialData(getLevel(updatedInitialStateArray));
         setIsAdded(false);
@@ -353,7 +352,7 @@ const EditableTable = () => {
       };
 
       try {
-        await fetch(
+        const res = await fetch(
           `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/update`,
           {
             method: "POST",
@@ -364,13 +363,28 @@ const EditableTable = () => {
           },
         );
 
-        const updatedInitialStateArray = updateNestedRow(
+        const data = await res.json();
+
+        let tempData;
+
+        let updatedInitialStateArray = updateNestedRow(
           initialData,
           id,
-          updatedRowObj,
+          data.current,
         );
 
-        setInitialData(updatedInitialStateArray);
+        tempData = updatedInitialStateArray;
+
+        if (data.changed.length !== 0) {
+          const changedID = data.changed[0].id;
+          tempData = updateNestedRow(
+            updatedInitialStateArray,
+            changedID,
+            ...data.changed,
+          );
+        }
+
+        setInitialData(tempData);
       } catch (error) {
         setError(error.message);
       } finally {
