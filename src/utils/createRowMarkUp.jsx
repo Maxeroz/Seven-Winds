@@ -38,7 +38,7 @@ export const createRowMarkup = (
         childRow !== currentId && (
           <Fragment key={childRow.id}>
             <tr
-              className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+              className={`h-[60px] border-y border-borderMain text-white ${isAdded ? "cursor-not-allowed" : "cursor-pointer"}`}
               onDoubleClick={() => handleDoubleClick(childRow.id)}
             >
               <td style={{ paddingLeft: `${row.level * 30}px` }}>

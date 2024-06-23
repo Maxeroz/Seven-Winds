@@ -175,7 +175,7 @@ const ActionButtons = ({
 
         {/* Основной блок с кнопками. Отображаем его когда isAdded true*/}
         <div
-          className={`relative z-10 flex items-center justify-between rounded-md pl-[3px] transition-all duration-200 ${displayOn ? "w-[60px] bg-white py-2 pr-[7px]" : "w-[40px]"}`}
+          className={`relative z-10 flex items-center justify-between rounded-md pl-[3px] transition-all duration-200 ${displayOn ? "w-[60px] bg-actionColor py-2 pr-[7px]" : "w-[40px]"}`}
           onMouseLeave={handleMouseLeave}
         >
           {/* Кнопка редактирования */}

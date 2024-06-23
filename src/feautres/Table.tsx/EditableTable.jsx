@@ -48,8 +48,7 @@ const EditableTable = () => {
     }
   }, [currentId, initialData]);
 
-  // HELPERS
-
+  // HELPERS __________________________________________________________________
   function findObjectAndInsert(data, targetId, payload) {
     // Рекурсивная функция для поиска объекта по id
     function findObjectRecursive(objArray, targetId) {
@@ -192,7 +191,7 @@ const EditableTable = () => {
     return count;
   }
 
-  // HANDLERS ______________________________________________________________
+  // HANDLERS __________________________________________________________________
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -216,8 +215,14 @@ const EditableTable = () => {
       method: "DELETE",
     });
 
-    setLineHeight(0);
-    setInitialData(modified);
+    // Если удаляется последний ряд таблицы, нужно сделать ресет состояние в дефолтное
+    // Для того чтобы снова отобразить инпут ввода данный
+    if (modified.length === 0) {
+      setInitialData(getLevel([{ id: EMPTY_ID, child: [] }]));
+    } else {
+      setLineHeight(0);
+      setInitialData(modified);
+    }
   };
 
   const handleChange = (e) => {
@@ -229,7 +234,7 @@ const EditableTable = () => {
     });
   };
 
-  // FETCH ON MOUNT _________________________________________________________
+  // FETCH ON MOUNT _____________________________________________________________
   useEffect(() => {
     const fetchData = async function (url, id) {
       setIsLoading(true);
@@ -291,29 +296,15 @@ const EditableTable = () => {
         }
 
         const data = await res.json();
-        console.log(data);
 
         const updatedInitialStateArray = updateNestedRow(
           initialData,
           EMPTY_ID,
-          data.current,
+          { ...data.current, child: [] },
         );
 
-        setInitialData(updatedInitialStateArray);
+        setInitialData(getLevel(updatedInitialStateArray));
         setIsAdded(false);
-
-        // if (initialData.length === 0) {
-        //   setInitialData((currentRows) => [
-        //     ...currentRows,
-        //     { ...data.current, child: [] },
-        //   ]);
-        // }
-
-        // setInitialData((items) => {
-        //   const result = getLevel(addChildToNestedItem(items, currentId, data));
-        //   console.log(result);
-        //   return result;
-        // });
       } catch (error) {
         console.error("Error creating row:", error);
       }
@@ -332,7 +323,7 @@ const EditableTable = () => {
 
       setLineHeight(0);
       setCurrentId(null);
-      if (!isAdded) setIsAdded(true);
+      setIsAdded(false);
     }
 
     // Обновление ряда начинается здесь.
@@ -420,6 +411,7 @@ const EditableTable = () => {
   };
 
   const handleDoubleClick = (rowId) => {
+    if (isAdded) return;
     setIsEdited(true);
     setIsAdded(false);
 
@@ -449,7 +441,6 @@ const EditableTable = () => {
       parentId,
       child,
     });
-    // alert("Double Clicked");
   };
 
   return (
@@ -487,13 +478,13 @@ const EditableTable = () => {
             </tr>
           )}
 
-          {/* RENDER THIS __________________________________________________ */}
+          {/* RENDER THIS ______________________________________________________ */}
           {initialData.map((row, i) => {
             return (
               <Fragment key={row.id}>
                 {/* Основной ряд таблицы */}
                 <tr
-                  className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+                  className={`h-[60px] border-y border-borderMain text-white ${isAdded ? "cursor-not-allowed" : "cursor-pointer"}`}
                   onDoubleClick={() => handleDoubleClick(row.id)}
                 >
                   <td>
@@ -607,26 +598,6 @@ const EditableTable = () => {
               </Fragment>
             );
           })}
-
-          {/* Отобразить инпуты формы в конце если data пустое и isAdded === true */}
-          {/* {(initialData?.length === 0 ||
-            (isAdded && currentObj.level === 1)) && (
-            <InputRow
-              key={`${currentId}_new_row`}
-              initialData={initialData}
-              currentId={currentId}
-              currentObj={currentObj}
-              formData={FormData}
-              handleAdd={handleAdd}
-              handleChange={handleChange}
-              handleDelete={handleDelete}
-              lineHeight={lineHeight}
-              setCurrentId={setCurrentId}
-              setCurrentObj={setCurrentObj}
-              isAdded={isAdded}
-              isEdited={isEdited}
-            />
-          )} */}
         </tbody>
       </table>
 
