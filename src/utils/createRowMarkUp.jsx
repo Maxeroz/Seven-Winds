@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import ActionButtons from "../feautres/Table.tsx/ActionButtons";
+import { EMPTY_ID } from "../constants";
 
 const getLevel = (rows, level = 1) => {
   return rows.map((item) => {
@@ -37,7 +38,7 @@ export const createRowMarkup = (
         childRow !== currentId && (
           <Fragment key={childRow.id}>
             <tr
-              className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer bg-blue-400"}`}
+              className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
               onDoubleClick={() => handleDoubleClick(childRow.id)}
             >
               <td style={{ paddingLeft: `${row.level * 30}px` }}>
@@ -54,12 +55,14 @@ export const createRowMarkup = (
                     array={initialData}
                     onCurrentObj={setCurrentObj}
                     lineHeight={lineHeight}
+                    currentId={currentId}
                   />
                 }
               </td>
               {/* Имя строки или инпут для редактирования */}
               <td className="w-[500px]">
-                {isEdited && currentId === childRow.id ? (
+                {(isEdited && currentId === childRow.id) ||
+                childRow.id === EMPTY_ID ? (
                   <input
                     type="text"
                     name="rowName"
@@ -73,7 +76,8 @@ export const createRowMarkup = (
               </td>
               {/* Зарплата или инпут для редактирования */}
               <td className="w-[140px]">
-                {isEdited && currentId === childRow.id ? (
+                {(isEdited && currentId === childRow.id) ||
+                childRow.id === EMPTY_ID ? (
                   <input
                     type="number"
                     name="salary"
@@ -87,7 +91,8 @@ export const createRowMarkup = (
               </td>
               {/* Расходы на оборудование или инпут для редактирования */}
               <td className="w-[120px]">
-                {isEdited && currentId === childRow.id ? (
+                {(isEdited && currentId === childRow.id) ||
+                childRow.id === EMPTY_ID ? (
                   <input
                     type="number"
                     name="equipmentCosts"
@@ -101,7 +106,8 @@ export const createRowMarkup = (
               </td>
               {/* Накладные расходы или инпут для редактирования */}
               <td className="w-[120px]">
-                {isEdited && currentId === childRow.id ? (
+                {(isEdited && currentId === childRow.id) ||
+                childRow.id === EMPTY_ID ? (
                   <input
                     type="number"
                     name="overheads"
@@ -115,7 +121,8 @@ export const createRowMarkup = (
               </td>
               {/* Ожидаемая прибыль или инпут для редактирования */}
               <td className="w-[120px]">
-                {isEdited && currentId === childRow.id ? (
+                {(isEdited && currentId === childRow.id) ||
+                childRow.id === EMPTY_ID ? (
                   <input
                     type="number"
                     name="estimatedProfit"
@@ -146,88 +153,7 @@ export const createRowMarkup = (
                 setCurrentObj,
                 lineHeight,
                 formData,
-                // handleInsert,
               )}
-
-            {/* ADD NEW ROW ______________________________________________________ */}
-            {isAdded && currentId === childRow.id && (
-              <Fragment>
-                {/* <div>ADD NEW ROW</div> */}
-
-                <tr
-                  className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer bg-red-400"}`}
-                  onDoubleClick={() => handleDoubleClick(childRow.id)}
-                >
-                  <td style={{ paddingLeft: `${childRow.level * 30}px` }}>
-                    {
-                      <ActionButtons
-                        level="child"
-                        onDelete={() => handleDelete(initialData, childRow.id)}
-                        id={childRow.id}
-                        isAdded={true}
-                        onAdd={onAdd}
-                        onCurrentId={setCurrentId}
-                        firstChild={childRow[0] === 0}
-                        array={initialData}
-                        onCurrentObj={setCurrentObj}
-                        lineHeight={lineHeight}
-                        key={childRow.id}
-                      />
-                    }
-                  </td>
-                  {/* Имя строки или инпут для редактирования */}
-                  <td className="w-[500px]">
-                    <input
-                      type="text"
-                      name="rowName"
-                      defaultValue={formData.rowName}
-                      className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] outline-none"
-                      onChange={handleChange}
-                    />
-                  </td>
-                  {/* Зарплата или инпут для редактирования */}
-                  <td className="w-[140px]">
-                    <input
-                      type="number"
-                      name="salary"
-                      defaultValue={formData.salary}
-                      className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                      onChange={handleChange}
-                    />
-                  </td>
-                  {/* Расходы на оборудование или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    <input
-                      type="number"
-                      name="equipmentCosts"
-                      defaultValue={formData.equipmentCosts}
-                      className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                      onChange={handleChange}
-                    />
-                  </td>
-                  {/* Накладные расходы или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    <input
-                      type="number"
-                      name="overheads"
-                      defaultValue={formData.overheads}
-                      className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                      onChange={handleChange}
-                    />
-                  </td>
-                  {/* Ожидаемая прибыль или инпут для редактирования */}
-                  <td className="w-[120px]">
-                    <input
-                      type="number"
-                      name="estimatedProfit"
-                      defaultValue={formData.estimatedProfit}
-                      className="h-[30px] w-full rounded-[6px] border border-borderMain bg-transparent px-[10px] text-left outline-none"
-                      onChange={handleChange}
-                    />
-                  </td>
-                </tr>
-              </Fragment>
-            )}
           </Fragment>
         )
       );

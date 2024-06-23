@@ -109,8 +109,6 @@ const ActionButtons = ({
   id,
   currentId,
   onCurrentId,
-  onCurrentObj,
-  isEdited,
   isAdded,
   lineHeight,
 }) => {
@@ -154,11 +152,11 @@ const ActionButtons = ({
 
   const handleAdd = () => {
     // RESET STATE
+
     if (currentId === id) return;
-    onAdd();
+    onAdd(id);
 
     onCurrentId(id);
-    onCurrentObj(findObjectById(array, id));
   };
 
   if (isAdded) {
@@ -172,17 +170,6 @@ const ActionButtons = ({
             id={`${id}-${lineHeight}`}
             isAdded={isAdded}
           />
-          // <>
-          //   <div
-          //     className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton transition-all duration-500`}
-          //     style={
-          //       firstChild
-          //         ? { height: lineHeight * 50 }
-          //         : { height: lineHeight * 55 }
-          //     }
-          //   ></div>
-          //   <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
-          // </>
         )}
         {/* Конец линий */}
 
@@ -198,7 +185,7 @@ const ActionButtons = ({
             onClick={handleAdd}
             onMouseEnter={handleHover}
             className="relative z-20"
-            disabled={isEdited || !id || isAdded}
+            disabled={currentId && currentId !== id}
           >
             <img src="./editButton.svg" alt="" />
           </button>
@@ -209,7 +196,7 @@ const ActionButtons = ({
               type="button"
               onClick={handleDelete}
               className="relative z-20"
-              // disabled={isAdded}
+              disabled={currentId && currentId !== id}
             >
               <img src="./deleteButton.svg" alt="" />
             </button>
@@ -229,17 +216,6 @@ const ActionButtons = ({
             firstChild={firstChild}
             key={`${id}-${lineHeight}`}
           />
-          // <>
-          //   <div
-          //     className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton transition-all duration-500`}
-          //     style={
-          //       firstChild
-          //         ? { height: fullLine * 55 }
-          //         : { height: fullLine * 60 }
-          //     }
-          //   ></div>
-          //   <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
-          // </>
         )}
         {/* Конец линий */}
 
@@ -255,7 +231,7 @@ const ActionButtons = ({
             onClick={handleAdd}
             onMouseEnter={handleHover}
             className="relative z-20"
-            disabled={isAdded || isEdited}
+            disabled={currentId && currentId !== id}
           >
             <img src="./editButton.svg" alt="" />
           </button>
@@ -266,7 +242,7 @@ const ActionButtons = ({
               type="button"
               onClick={handleDelete}
               className="relative z-20"
-              disabled={isEdited || isAdded}
+              disabled={currentId && currentId !== id}
             >
               <img src="./deleteButton.svg" alt="" />
             </button>
