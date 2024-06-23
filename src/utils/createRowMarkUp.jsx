@@ -37,7 +37,7 @@ export const createRowMarkup = (
         childRow !== currentId && (
           <Fragment key={childRow.id}>
             <tr
-              className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+              className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer bg-blue-400"}`}
               onDoubleClick={() => handleDoubleClick(childRow.id)}
             >
               <td style={{ paddingLeft: `${row.level * 30}px` }}>
@@ -153,8 +153,9 @@ export const createRowMarkup = (
             {isAdded && currentId === childRow.id && (
               <Fragment>
                 {/* <div>ADD NEW ROW</div> */}
+
                 <tr
-                  className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+                  className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer bg-red-400"}`}
                   onDoubleClick={() => handleDoubleClick(childRow.id)}
                 >
                   <td style={{ paddingLeft: `${childRow.level * 30}px` }}>
@@ -170,7 +171,7 @@ export const createRowMarkup = (
                         array={initialData}
                         onCurrentObj={setCurrentObj}
                         lineHeight={lineHeight}
-                        // handleInsert={handleInsert}
+                        key={childRow.id}
                       />
                     }
                   </td>

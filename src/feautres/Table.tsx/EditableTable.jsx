@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { API_ID, API_URL } from "../../config";
 import ActionButtons from "./ActionButtons";
 import { createRowMarkup } from "../../utils/createRowMarkUp.jsx";
+import InputRow from "./InputRow.jsx";
 // import ActionButtons from "./ActionButtons";
 
 // Главный компонент таблицы
@@ -36,12 +37,16 @@ const EditableTable = () => {
 
   useEffect(() => {
     if (initialData) {
-      setLineHeight(
-        countElements(findObjectsFromLevelById(initialData, currentId)),
-      );
+      //Objs = объект найденный по ID, который имеет полную вложенность со свойством child
+      const objs = findObjectsFromLevelById(initialData, currentId);
+
+      // Функция для подсчета всех объектов начиная от родителя и проходя по свойству child
+      const amountObjs = countElements(objs);
+
+      // Устанавливаем количество объектов на lineHeight для того чтобы передать эту высоту в пропс кнопки
+      // и отрисовать правильную длину линии. Вычитаем 1 для того чтобы не учитывать родительский объект
+      setLineHeight(amountObjs - 1);
     }
-    // if (initialData)
-    //   setCurrentArray(findObjectsFromLevelById(initialData, currentId));
   }, [currentId, initialData]);
 
   function findObjectAndInsert(data, parentId, targetId) {
@@ -478,8 +483,9 @@ const EditableTable = () => {
               return (
                 <Fragment key={row.id}>
                   {/* Основной ряд таблицы */}
+                  <div>Ряд верхний</div>
                   <tr
-                    className={`h-[60px] border-y border-borderMain text-white ${isEdited ? "" : "cursor-pointer"}`}
+                    className={`h-[60px] border-y border-borderMain bg-orange-400 text-white ${isEdited ? "" : "cursor-pointer"}`}
                     onDoubleClick={() => handleDoubleClick(row.id)}
                   >
                     <td>
@@ -591,74 +597,24 @@ const EditableTable = () => {
               );
             })}
 
-          {/* Отобразить форм инпуты в конце если data пустое и isAdded === true */}
+          {/* Отобразить инпуты формы в конце если data пустое и isAdded === true */}
           {(initialData?.length === 0 ||
             (isAdded && currentObj.level === 1)) && (
-            <tr className="h-[60px]">
-              <th
-                className="h-[42px] text-left font-normal"
-                style={{ paddingLeft: `${currentObj.level * 30}px` }}
-              >
-                <ActionButtons
-                  onDelete={() => handleDelete(initialData, row.id)}
-                  onAdd={handleAdd}
-                  onCurrentId={setCurrentId}
-                  isEdited={isEdited}
-                  isAdded={isAdded}
-                  level={initialData?.length === 0 ? "" : "child"}
-                  array={initialData}
-                  onCurrentObj={setCurrentObj}
-                  lineHeight={lineHeight}
-                  currentId={currentId}
-                  handleInsert={handleInsert}
-                />
-              </th>
-              <th className="h-[42px] w-[500px] text-left font-normal">
-                <input
-                  type="text"
-                  name="rowName"
-                  value={formData.rowName}
-                  className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
-                  onChange={handleChange}
-                />
-              </th>
-              <th className="h-[42px] text-left font-normal">
-                <input
-                  type="number"
-                  name="salary"
-                  value={formData.salary}
-                  className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
-                  onChange={handleChange}
-                />
-              </th>
-              <th className="h-[42px] text-left font-normal">
-                <input
-                  type="number"
-                  name="equipmentCosts"
-                  value={formData.equipmentCosts}
-                  className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
-                  onChange={handleChange}
-                />
-              </th>
-              <th className="h-[42px] text-left font-normal">
-                <input
-                  type="number"
-                  name="overheads"
-                  value={formData.overheads}
-                  className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
-                  onChange={handleChange}
-                />
-              </th>
-              <th className="h-[42px] text-left font-normal">
-                <input
-                  type="number"
-                  name="estimatedProfit"
-                  value={formData.estimatedProfit}
-                  className="h-[30px] w-[90%] rounded-[6px] border border-borderMain bg-transparent px-3 outline-none"
-                  onChange={handleChange}
-                />
-              </th>
-            </tr>
+            <InputRow
+              key={`${currentId}_new_row`}
+              initialData={initialData}
+              currentId={currentId}
+              currentObj={currentObj}
+              formData={FormData}
+              handleAdd={handleAdd}
+              handleChange={handleChange}
+              handleDelete={handleDelete}
+              lineHeight={lineHeight}
+              setCurrentId={setCurrentId}
+              setCurrentObj={setCurrentObj}
+              isAdded={isAdded}
+              isEdited={isEdited}
+            />
           )}
         </tbody>
       </table>

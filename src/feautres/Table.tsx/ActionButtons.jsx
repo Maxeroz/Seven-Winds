@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import ActionIcons from "./ActionLines";
+import ActionLines from "./ActionLines";
 
 function findObjectsFromLevelById(data, parentId, targetId) {
   // Функция для рекурсивного поиска объекта по id
@@ -99,18 +101,18 @@ function countElements(arr) {
 }
 
 const ActionButtons = ({
+  array,
+  firstChild,
   onAdd,
   onDelete,
   level,
   id,
+  currentId,
   onCurrentId,
+  onCurrentObj,
   isEdited,
   isAdded,
-  firstChild,
-  array,
-  onCurrentObj,
   lineHeight,
-  currentId,
 }) => {
   const [displayOn, setDisplayOn] = useState(false);
   const [fullLine, setFullLine] = useState(null);
@@ -120,16 +122,25 @@ const ActionButtons = ({
   // Calculate computedParentId and newBetweenItemsArray
   useEffect(() => {
     if (array && id) {
+      // Находится родительский id
       const parentId = findParentId({ child: array }, id);
       setComputedParentId(parentId);
+      // Находится массив объектом между родительским объектом и текущим объектом ряда
       const betweenItemsArray = findObjectsFromLevelById(array, parentId, id);
       setNewBetweenItemsArray(betweenItemsArray);
     }
   }, [array, id]);
 
-  // Update fullLine based on newBetweenItemsArray
+  const handleDelete = () => {
+    setFullLine(null);
+    onDelete();
+  };
+
+  // Устанавливаем полную длину на количество элементов между родительским объектом
+  // и текущим объектом ряда и прибавляем 1
   useEffect(() => {
-    const newFullLine = countElements(newBetweenItemsArray) + 1;
+    let newFullLine = countElements(newBetweenItemsArray) + 1;
+
     setFullLine(newFullLine);
   }, [newBetweenItemsArray]);
 
@@ -151,29 +162,33 @@ const ActionButtons = ({
   };
 
   if (isAdded) {
-    // const fullLine = lineHeight * 55;
-
     return (
-      <div className="relative">
+      <div className="relative" key={id}>
         {/* Линии, которые рисуются под блоком */}
         {level === "child" && (
-          <>
-            <div
-              className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton`}
-              style={
-                firstChild
-                  ? { height: lineHeight * 50 }
-                  : { height: lineHeight * 55 }
-              }
-            ></div>
-            <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
-          </>
+          <ActionLines
+            lineHeight={lineHeight}
+            firstChild={firstChild}
+            id={`${id}-${lineHeight}`}
+            isAdded={isAdded}
+          />
+          // <>
+          //   <div
+          //     className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton transition-all duration-500`}
+          //     style={
+          //       firstChild
+          //         ? { height: lineHeight * 50 }
+          //         : { height: lineHeight * 55 }
+          //     }
+          //   ></div>
+          //   <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
+          // </>
         )}
         {/* Конец линий */}
 
-        {/* Основной блок с кнопками */}
+        {/* Основной блок с кнопками. Отображаем его когда isAdded true*/}
         <div
-          className={`relative z-10 flex items-center justify-between rounded-md pl-[3px] transition-all duration-200 ${displayOn ? "w-[60px] bg-actionColor py-2 pr-[7px]" : "w-[40px]"}`}
+          className={`relative z-10 flex items-center justify-between rounded-md pl-[3px] transition-all duration-200 ${displayOn ? "w-[60px] bg-white py-2 pr-[7px]" : "w-[40px]"}`}
           onMouseLeave={handleMouseLeave}
         >
           {/* Кнопка редактирования */}
@@ -192,7 +207,7 @@ const ActionButtons = ({
           {displayOn && (
             <button
               type="button"
-              onClick={onDelete}
+              onClick={handleDelete}
               className="relative z-20"
               // disabled={isAdded}
             >
@@ -209,17 +224,22 @@ const ActionButtons = ({
       <div className="relative">
         {/* Линии, которые рисуются под блоком */}
         {level === "child" && (
-          <>
-            <div
-              className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton`}
-              style={
-                firstChild
-                  ? { height: fullLine * 55 }
-                  : { height: fullLine * 60 }
-              }
-            ></div>
-            <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
-          </>
+          <ActionLines
+            fullLine={fullLine}
+            firstChild={firstChild}
+            key={`${id}-${lineHeight}`}
+          />
+          // <>
+          //   <div
+          //     className={`absolute bottom-1/2 left-[-14px] z-0 ${firstChild ? "h-[55px]" : "h-[60px]"} w-px bg-borderButton transition-all duration-500`}
+          //     style={
+          //       firstChild
+          //         ? { height: fullLine * 55 }
+          //         : { height: fullLine * 60 }
+          //     }
+          //   ></div>
+          //   <div className="absolute bottom-1/2 left-[-14px] z-0 h-px w-[21px] bg-borderButton"></div>
+          // </>
         )}
         {/* Конец линий */}
 
@@ -244,7 +264,7 @@ const ActionButtons = ({
           {displayOn && (
             <button
               type="button"
-              onClick={onDelete}
+              onClick={handleDelete}
               className="relative z-20"
               disabled={isEdited || isAdded}
             >
