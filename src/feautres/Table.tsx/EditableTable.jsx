@@ -211,17 +211,27 @@ const EditableTable = () => {
   const handleDelete = async (array, id) => {
     const modified = removeObjectByIdRecursive(array, id);
 
-    fetch(`${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/delete`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `${API_URL}/v1/outlay-rows/entity/${API_ID}/row/${id}/delete`,
+      {
+        method: "DELETE",
+      },
+    );
 
-    // Если удаляется последний ряд таблицы, нужно сделать ресет состояние в дефолтное
+    const data = await res.json();
+    const changedID = data.changed[0]?.id;
+
+    if (changedID) {
+      setInitialData(updateNestedRow(modified, changedID, ...data.changed));
+    }
+
+    // Если удаляется последний ряд таблицы, нужно сделать RESET состояние в дефолтное
     // Для того чтобы снова отобразить инпут ввода данный
     if (modified.length === 0) {
       setInitialData(getLevel([{ id: EMPTY_ID, child: [] }]));
     } else {
       setLineHeight(0);
-      setInitialData(modified);
+      // setInitialData(modified);
     }
   };
 
@@ -302,6 +312,14 @@ const EditableTable = () => {
           child: [],
         });
 
+        data.changed.forEach((obj) => {
+          updatedInitialStateArray = updateNestedRow(
+            updatedInitialStateArray,
+            obj.id,
+            obj,
+          );
+        });
+
         setInitialData(getLevel(updatedInitialStateArray));
         setIsAdded(false);
       } catch (error) {
@@ -364,15 +382,12 @@ const EditableTable = () => {
         );
 
         const data = await res.json();
-
         let tempData;
-
         let updatedInitialStateArray = updateNestedRow(
           initialData,
           id,
           data.current,
         );
-
         tempData = updatedInitialStateArray;
 
         if (data.changed.length !== 0) {
